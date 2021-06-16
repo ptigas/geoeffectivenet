@@ -1,0 +1,9 @@
+pandas
+numpy
+scipy
+sympy
+pytorch-lightning
+torchvision
+sklearn
+astropy
+h5py

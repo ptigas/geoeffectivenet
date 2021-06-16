@@ -9,6 +9,7 @@ from models.spherical_harmonics import SphericalHarmonics
 import utils
 from models.base import BaseModel
 from dataloader import basis_matrix
+from models.tcn import TemporalConvNet
 
 
 class NamedAccess():
@@ -60,30 +61,33 @@ class NeuralRNNWiemer(BaseModel):
         # idx of targets in dataset
         self.targets_idx = targets_idx
 
+        hidden = 16
+        levels = 2
+        kernel_size = 24
+        levels = levels
+        kernel_size = kernel_size
+        num_channels = [hidden]*levels
 
-        self.lstm = nn.LSTM(25,
-                            400,
-                            num_layers=1,
-                            bidirectional=True,
-                            batch_first=True,
-                            dropout=0.0)
-
-        self.omni_past_encoder = nn.GRU(800,
-                                        16,
+        self.omni_past_encoder = nn.GRU(25,
+                                        hidden,
                                         num_layers=1,
-                                        bidirectional=True,
+                                        bidirectional=False,
                                         batch_first=True,
                                         dropout=0.5)
+
+
+
+        #self.omni_past_encoder = TemporalConvNet(25, num_channels, kernel_size, dropout=0.5)
 
         self.nmax = nmax
         self.sph = SphericalHarmonics(nmax)
         n_coeffs = len(self.sph.ylm)*2
 
         self.encoder_mlp = nn.Sequential(
-            nn.Linear(32, 1024),
+            nn.Linear(hidden, 16),
             nn.ELU(inplace=True),
             nn.Dropout(p=0.5),
-            nn.Linear(1024, n_coeffs, bias=False) # 882
+            nn.Linear(16, n_coeffs, bias=False) # 882
         )
 
         self.omni_features = omni_features
@@ -95,7 +99,7 @@ class NeuralRNNWiemer(BaseModel):
     def forward(self,
                 past_omni,
                 past_supermag,
-                phi, theta,
+                mlt, mcolat,
                 dates,
                 future_dates,
                 **kargs):
@@ -163,13 +167,13 @@ class NeuralRNNWiemer(BaseModel):
         #import pdb; pdb.set_trace()
         #encoded = self.omni_past_encoder(features)[1][0]
 
-        B = features.shape[0]
-        encoded = self.omni_past_encoder(self.lstm(features)[0])[1].transpose(1, 0).reshape(B, -1)
+        #encoded = self.omni_past_encoder(features.transpose(2, 1))[..., -1]
+        encoded = self.omni_past_encoder(features)[1][0]
 
         coeffs = self.encoder_mlp(encoded)
 
         with torch.no_grad():
-            basis = self.sph(theta.squeeze(1), phi.squeeze(1))
+            basis = self.sph(mlt.squeeze(1), mcolat.squeeze(1))
             #basis_cpu = torch.Tensor(basis_matrix(self.nmax, theta.squeeze(1).detach().cpu().numpy(), phi.squeeze(1).detach().cpu().numpy())).cuda().double()
 
             # fix the zero gradients error
