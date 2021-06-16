@@ -82,7 +82,6 @@ class ShpericalHarmonicsDataset(data.Dataset):
         idx,
         f107_dataset,
         targets="dbn_nez",
-        supermag_columns=["dbn_nez"],
         past_omni_length=120,
         past_supermag_length=10,
         future_length=10,
@@ -128,7 +127,6 @@ class ShpericalHarmonicsDataset(data.Dataset):
         assert len(self.dates) == len(self.supermag_data)
 
         self.targets = targets
-        self.supermag_columns = supermag_columns
 
         self.past_omni_length = past_omni_length
         self.past_supermag_length = past_supermag_length
@@ -155,19 +153,7 @@ class ShpericalHarmonicsDataset(data.Dataset):
                 self.supermag_data[self.target_idx]
             )
 
-        self.return_spherical_harmonics = False
-
         self._nbasis = nmax
-
-        # # construct grid
-        # shape_spherical= (45, 360)
-        # self.shape=shape_spherical
-        # grid_phi_spherical   = (np.arange(shape_spherical[0])+0.5)/shape_spherical[0]*np.pi/4     #colat
-        # self.grid_phi_spherical   = grid_phi_spherical.reshape(shape_spherical[0],1)@np.ones((1,shape_spherical[1]),dtype=np.float)
-        # grid_theta_spherical = (np.arange(shape_spherical[1])+0.5)/shape_spherical[1]*2.0*np.pi #longitude
-        # self.grid_theta_spherical = np.ones((shape_spherical[0],1),dtype=np.float)@grid_theta_spherical.reshape(1,shape_spherical[1])
-        # self.basis = basis_matrix(self._nbasis, self.grid_theta_spherical.ravel().reshape(1, -1), self.grid_phi_spherical.ravel().reshape(1, -1))
-        # self.basis = torch.Tensor(self.basis).double().squeeze(0)
 
     def __len__(self):
         return (

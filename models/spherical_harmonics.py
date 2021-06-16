@@ -1,9 +1,8 @@
 import sympy
 import torch
-from sympy import (Dummy, I, S, Ynm, cos, exp, factorial, latex, pi, sin, sqrt,
-                   symbols, sympify, var)
+from sympy import (Ynm, symbols)
 
-from utils.sympy import SymPyModule, Ylm
+from utils.sympy import SymPyModule
 
 
 class SphericalHarmonics(torch.nn.Module):
