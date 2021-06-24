@@ -31,7 +31,7 @@ class BaseModel(pl.LightningModule):
         super().__init__()
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=1e-3)
+        return torch.optim.Adam(self.parameters(), lr=5e-4)
 
     def training_step(self, training_batch, batch_idx):
         (
@@ -53,8 +53,8 @@ class BaseModel(pl.LightningModule):
         future_supermag = future_supermag[..., target_col].squeeze(1)
         loss = ((future_supermag - predictions) ** 2).mean()
 
-        # sparsity L1
-        loss += 1e-3 * torch.norm(coeffs, p=1)
+        # sparsity L2
+        loss += 1e-4 * torch.norm(coeffs, p=2)
 
         self.log("train_MSE", loss, on_step=False, on_epoch=True)
         self.log(
@@ -84,6 +84,11 @@ class BaseModel(pl.LightningModule):
         target_col = self.targets_idx
 
         future_supermag = future_supermag[..., target_col].squeeze(1)
+
+        # unstandarize predictions and futures
+        # unscaled_future_supermag = self.scaler['supermag'].inverse_transform(future_supermag.cpu().numpy())
+        # unscaled_predictions = self.scaler['supermag'].inverse_transform(predictions.cpu().numpy())
+
         loss = ((future_supermag - predictions) ** 2).mean()
 
         self.log(
@@ -116,6 +121,7 @@ class BaseModel(pl.LightningModule):
                 _, _coeffs, pred = self(
                     past_omni, past_supermag, mlt, mcolat, past_dates, future_dates
                 )
+
                 predictions.append(pred.cuda())
                 coeffs.append(_coeffs.cuda())
                 targets.append(future_supermag[..., target_col].cuda())
@@ -125,6 +131,10 @@ class BaseModel(pl.LightningModule):
 
             predictions[torch.isnan(predictions)] = 0
             targets[torch.isnan(targets)] = 0
+
+            _mean, _std = self.scaler['supermag']
+            predictions = predictions*_std + _mean
+            targets = targets*_std + _mean
 
             self.log(
                 "wiemer_R2",
@@ -151,7 +161,9 @@ class BaseModel(pl.LightningModule):
             )
             nice_idx = [500]
             pred_sphere = spherical_plot_forecasting(
-                self.nmax, coeffs[nice_idx], predictions[nice_idx], targets[nice_idx]
+                self.nmax, coeffs[nice_idx], predictions[nice_idx].detach().cpu(),
+                targets[nice_idx].detach().cpu(), mlt[nice_idx].detach().cpu(), mcolat[nice_idx].detach().cpu(),
+                _mean, _std
             )
             self.logger.experiment.log(
                 {"pred_sphere": [wandb.Image(pred_sphere, caption="pred_sphere")]}

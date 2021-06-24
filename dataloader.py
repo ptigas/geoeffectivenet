@@ -90,7 +90,7 @@ class ShpericalHarmonicsDataset(data.Dataset):
         zero_supermag=False,
         scaler=None,
         training_batch=True,
-        nmax=20,
+        nmax=20
     ):
 
         self.dates = supermag_data.dates[idx]
@@ -136,22 +136,23 @@ class ShpericalHarmonicsDataset(data.Dataset):
         self.zero_supermag = zero_supermag
         self.training_batch = training_batch
 
-        self.scaler = None
         if scaler is not None:
             print("using existing scaler")
             self.omni = scaler["omni"].transform(self.omni)
-            self.supermag_data[self.target_idx] = scaler["supermag"].transform(
-                self.supermag_data[self.target_idx]
-            )
+            target = self.supermag_data[..., self.target_idx]
+            target_mean, target_std = scaler["supermag"]
+            self.supermag_data[..., self.target_idx] = (target-target_mean)/target_std
+            self.scaler = scaler
         else:
             self.scaler = {}
             print("learning scaler")
             self.scaler["omni"] = StandardScaler()
-            self.scaler["supermag"] = StandardScaler()
+            target = self.supermag_data[...,self.target_idx]
+            target_mean = np.nanmean(target)
+            target_std = np.nanstd(target)
+            self.scaler["supermag"] = [target_mean, target_std]
             self.omni = self.scaler["omni"].fit_transform(self.omni)
-            self.supermag_data[self.target_idx] = self.scaler["supermag"].fit_transform(
-                self.supermag_data[self.target_idx]
-            )
+            self.supermag_data[...,self.target_idx] = (target-target_mean)/target_std
 
         self._nbasis = nmax
 

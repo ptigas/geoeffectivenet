@@ -21,38 +21,6 @@ class NamedAccess:
         return self.data[..., key]
 
 
-# class Persistent(nn.Module):
-#     def __init__(self, past_omni_length, future_length, omni_features, supermag_features, nmax, targets):
-#         super(Persistent, self).__init__()
-
-#         n_coeffs = 0
-#         for n in range(nmax+1):
-#             for m in range(0, n+1):
-#                 n_coeffs += 1
-#         n_coeffs *= 2
-
-#         self.omni_features = omni_features
-#         self.supermag_features = supermag_features
-
-#         self.targets = targets
-#         self.future_length = future_length
-
-#         self.decoder = nn.GRUCell(input_size=targets, hidden_size=64) #Was 512
-
-#         self.g = nn.Linear(16, n_coeffs//2)
-#         self.h = nn.Linear(16, n_coeffs//2)
-
-#     def forward(self,
-#                 past_omni,
-#                 past_supermag,
-#                 future_basis,
-#                 dates,
-#                 future_dates,
-#                 **kargs):
-
-#         return None, past_supermag[:, [-1], :, :].repeat([1, future_basis.shape[1], 1, 1]), None
-
-
 class NeuralRNNWiemer(BaseModel):
     def __init__(
         self,
@@ -76,7 +44,7 @@ class NeuralRNNWiemer(BaseModel):
         [hidden] * levels
 
         self.omni_past_encoder = nn.GRU(
-            25, hidden, num_layers=1, bidirectional=False, batch_first=True, dropout=0.5
+            25, hidden, num_layers=1, bidirectional=False, batch_first=True
         )
 
         # self.omni_past_encoder = TemporalConvNet(25, num_channels, kernel_size, dropout=0.5)
@@ -188,9 +156,6 @@ class NeuralRNNWiemer(BaseModel):
 
         if torch.isnan(coeffs).all():
             import pdb
-
             pdb.set_trace()
-
-        # coeffs_error = (basis-basis_cpu).abs()
 
         return basis, coeffs, predictions
