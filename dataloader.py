@@ -98,7 +98,9 @@ class ShpericalHarmonicsDataset(data.Dataset):
         self.supermag_data = supermag_data.data[idx]
         self.supermag_features = supermag_data.features
 
-        self.target_idx = np.where(self.supermag_features == targets)[0][0]
+        self.target_idx = []
+        for target in targets:
+            self.target_idx.append(np.where(self.supermag_features == target)[0][0])
 
         self.omni = omni_data.data.iloc[idx].to_numpy()
 
@@ -148,8 +150,8 @@ class ShpericalHarmonicsDataset(data.Dataset):
             print("learning scaler")
             self.scaler["omni"] = StandardScaler()
             target = self.supermag_data[...,self.target_idx]
-            target_mean = np.nanmean(target)
-            target_std = np.nanstd(target)
+            target_mean = np.nanmean(np.nanmean(target, 0), 0)
+            target_std = np.nanstd(np.nanstd(target, 0), 0)
             self.scaler["supermag"] = [target_mean, target_std]
             self.omni = self.scaler["omni"].fit_transform(self.omni)
             self.supermag_data[...,self.target_idx] = (target-target_mean)/target_std

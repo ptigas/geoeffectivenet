@@ -57,7 +57,7 @@ class NeuralRNNWiemer(BaseModel):
             nn.Linear(hidden, 16),
             nn.ELU(inplace=True),
             nn.Dropout(p=0.5),
-            nn.Linear(16, n_coeffs, bias=False),  # 882
+            nn.Linear(16, n_coeffs*len(targets_idx), bias=False),  # 882
         )
 
         self.omni_features = omni_features
@@ -142,7 +142,7 @@ class NeuralRNNWiemer(BaseModel):
         # encoded = self.omni_past_encoder(features.transpose(2, 1))[..., -1]
         encoded = self.omni_past_encoder(features)[1][0]
 
-        coeffs = self.encoder_mlp(encoded)
+        coeffs = self.encoder_mlp(encoded).reshape(encoded.shape[0], -1, len(self.targets_idx))
 
         with torch.no_grad():
             basis = self.sph(mlt.squeeze(1), mcolat.squeeze(1))
@@ -152,7 +152,7 @@ class NeuralRNNWiemer(BaseModel):
             basis[basis.isnan()] = 0.0
             # basis_cpu[basis_cpu.isnan()] = 0.0
 
-        predictions = torch.einsum("bij,bj->bi", basis.squeeze(1), coeffs)
+        predictions = torch.einsum("bij,bjk->bik", basis.squeeze(1), coeffs)
 
         if torch.isnan(coeffs).all():
             import pdb

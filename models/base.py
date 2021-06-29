@@ -26,12 +26,16 @@ def get_img_from_fig(fig):
     return ToTensor()(image)
 
 
+def MSE(a, b):
+    return ((a-b)**2).mean()
+
+
 class BaseModel(pl.LightningModule):
     def __init__(self):
         super().__init__()
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=5e-4)
+        return torch.optim.Adam(self.parameters(), lr=1e-4)
 
     def training_step(self, training_batch, batch_idx):
         (
@@ -63,6 +67,24 @@ class BaseModel(pl.LightningModule):
             on_step=False,
             on_epoch=True,
         )
+
+        self.log("train_dbe_MSE", MSE(future_supermag[..., [0]], predictions[..., [0]]).mean(), on_step=False, on_epoch=True)
+        self.log(
+            "train_dbe_r2",
+            R2(future_supermag[..., [0]], predictions[..., [0]]).mean(),
+            on_step=False,
+            on_epoch=True,
+        )
+
+        self.log("train_dbn_MSE", MSE(future_supermag[..., [1]], predictions[..., [1]]).mean(), on_step=False, on_epoch=True)
+        self.log(
+            "train_dbn_r2",
+            R2(future_supermag[..., [1]], predictions[..., [1]]).mean(),
+            on_step=False,
+            on_epoch=True,
+        )
+
+
         return loss
 
     def validation_step(self, val_batch, batch_idx):
@@ -75,9 +97,7 @@ class BaseModel(pl.LightningModule):
             (mlt, mcolat),
         ) = val_batch
 
-        _, coeffs, predictions = self(
-            past_omni, past_supermag, mlt, mcolat, past_dates, future_dates
-        )
+        _, coeffs, predictions = self(past_omni, past_supermag, mlt, mcolat, past_dates, future_dates)
 
         predictions[torch.isnan(predictions)] = 0
         future_supermag[torch.isnan(future_supermag)] = 0
@@ -118,6 +138,7 @@ class BaseModel(pl.LightningModule):
                 mcolat = mcolat.cuda()
                 past_dates = past_dates.cuda()
                 future_dates = future_dates.cuda()
+
                 _, _coeffs, pred = self(
                     past_omni, past_supermag, mlt, mcolat, past_dates, future_dates
                 )
@@ -133,8 +154,8 @@ class BaseModel(pl.LightningModule):
             targets[torch.isnan(targets)] = 0
 
             _mean, _std = self.scaler['supermag']
-            predictions = predictions*_std + _mean
-            targets = targets*_std + _mean
+            predictions = predictions*torch.Tensor(_std).cuda() + torch.Tensor(_mean).cuda()
+            targets = targets*torch.Tensor(_std).cuda() + torch.Tensor(_mean).cuda()
 
             self.log(
                 "wiemer_R2",
@@ -160,13 +181,25 @@ class BaseModel(pl.LightningModule):
                 }
             )
             nice_idx = [500]
+
+            # dbe_nez
             pred_sphere = spherical_plot_forecasting(
-                self.nmax, coeffs[nice_idx], predictions[nice_idx].detach().cpu(),
-                targets[nice_idx].detach().cpu(), mlt[nice_idx].detach().cpu(), mcolat[nice_idx].detach().cpu(),
-                _mean, _std
+                self.nmax, coeffs[nice_idx][..., 0], predictions[nice_idx][..., 0].detach().cpu(),
+                targets[nice_idx][..., 0].detach().cpu(), mlt[nice_idx].detach().cpu(), mcolat[nice_idx].detach().cpu(),
+                _mean[0], _std[0]
             )
             self.logger.experiment.log(
-                {"pred_sphere": [wandb.Image(pred_sphere, caption="pred_sphere")]}
+                {"dbe_nez": [wandb.Image(pred_sphere, caption="pred_sphere")]}
+            )
+
+            # dbn_nez
+            pred_sphere = spherical_plot_forecasting(
+                self.nmax, coeffs[nice_idx][..., 1], predictions[nice_idx][..., 1].detach().cpu(),
+                targets[nice_idx][..., 1].detach().cpu(), mlt[nice_idx].detach().cpu(), mcolat[nice_idx].detach().cpu(),
+                _mean[1], _std[1]
+            )
+            self.logger.experiment.log(
+                {"dbn_nez": [wandb.Image(pred_sphere, caption="pred_sphere")]}
             )
 
             plt.figure().clear()

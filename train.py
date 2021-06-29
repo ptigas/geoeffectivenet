@@ -24,8 +24,8 @@ wandb_logger = WandbLogger(project="geoeffectivenet")
 
 future_length = 1
 past_omni_length = 120
-nmax = 19
-targets = "dbe_nez"
+nmax = 20
+targets = ["dbe_nez", "dbn_nez"]
 lag = 1
 learning_rate = 1e-04
 batch_size = 2048
@@ -82,7 +82,7 @@ val_loader = data.DataLoader(
 )
 plot_loader = data.DataLoader(val_ds, batch_size=4, shuffle=False)
 
-targets_idx = np.where(train_ds.supermag_features == targets)[0][0]
+targets_idx = [np.where(train_ds.supermag_features == target)[0][0] for target in targets]
 
 # initialize model
 model = NeuralRNNWiemer(
@@ -99,11 +99,14 @@ model = model.double()
 model.wiemer_data = wiemer_loader
 model.scaler = scaler
 
+# save the scaler to de-standarize prediction
+pickle.dump(scaler, open('checkpoints/scalers.p', "wb"))
+
 checkpoint_callback = ModelCheckpoint(dirpath="checkpoints")
 trainer = pl.Trainer(
     gpus=-1,
     check_val_every_n_epoch=5,
     logger=wandb_logger,
-    callbacks=[checkpoint_callback, EarlyStopping(monitor='val_R2')]
+    callbacks=[checkpoint_callback],#, EarlyStopping(monitor='val_R2')]
 )
 trainer.fit(model, train_loader, val_loader)
