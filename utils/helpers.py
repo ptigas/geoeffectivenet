@@ -581,9 +581,6 @@ def dipole_tilt(times, epoch=2015.0):
 
 
 def R2(true, pred):
-    _sum_of_errors = torch.sum(torch.pow(pred - true, 2), -1)
-    _y_sum = torch.sum(true, -1)
-    _y_sq_sum = torch.sum(torch.pow(true, 2), -1)
-    _num_examples = true.shape[1]
-
-    return 1 - _sum_of_errors / (_y_sq_sum - (_y_sum ** 2) / _num_examples)
+    mse = ((true-pred)**2).mean()
+    var = (true-pred).var()
+    return 1 - mse/var

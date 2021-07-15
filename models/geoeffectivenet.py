@@ -28,6 +28,7 @@ class NeuralRNNWiemer(BaseModel):
         future_length,
         omni_features,
         supermag_features,
+        omni_resolution,
         nmax,
         targets_idx,
     ):
@@ -35,6 +36,8 @@ class NeuralRNNWiemer(BaseModel):
 
         # idx of targets in dataset
         self.targets_idx = targets_idx
+
+        self.omni_resolution = omni_resolution
 
         hidden = 16
         levels = 2
@@ -67,6 +70,8 @@ class NeuralRNNWiemer(BaseModel):
     def forward(
         self, past_omni, past_supermag, mlt, mcolat, dates, future_dates, **kargs
     ):
+        # 10 mins average
+        past_omni = nn.AvgPool1d(self.omni_resolution)(past_omni.permute([0, 2, 1])).permute([0, 2, 1])
 
         past_omni = NamedAccess(past_omni, self.omni_features)
 

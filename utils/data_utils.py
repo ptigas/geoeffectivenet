@@ -103,11 +103,13 @@ def get_wiemer_data(targets, scaler, lag, past_omni_length, future_length):
         weimerinds,
         scaler=scaler,
         targets=targets,
+        past_omni_length=past_omni_length,
+        future_length=future_length,
         f107_dataset="data_local/f107.npz"
     )
 
 
-def load_cached_data(filename, idx, scaler, supermag_data, omni_data, targets):
+def load_cached_data(filename, idx, scaler, supermag_data, omni_data, targets, past_omni_length, future_length):
     if os.path.exists(filename):
         data = pickle.load(open(filename, "rb"))
         return data, data.scaler
@@ -118,6 +120,8 @@ def load_cached_data(filename, idx, scaler, supermag_data, omni_data, targets):
             idx,
             scaler=scaler,
             targets=targets,
+            past_omni_length=past_omni_length,
+            future_length=future_length,
             f107_dataset="data_local/f107.npz",
         )
         pickle.dump(data, open(filename, "wb"))

@@ -20,15 +20,16 @@ from dataloader import (OMNIDataset, ShpericalHarmonicsDataset,
 
 torch.set_default_dtype(torch.float64)  # this is important else it will overflow
 
-wandb_logger = WandbLogger(project="geoeffectivenet")
+wandb_logger = WandbLogger(project="geoeffectivenet", log_model=True)
 
 future_length = 1
-past_omni_length = 120
+past_omni_length = 600 # minutes in the past
+omni_resolution = 10 # 10 minutes
 nmax = 20
 targets = ["dbe_nez", "dbn_nez"]
 lag = 1
 learning_rate = 1e-04
-batch_size = 2048
+batch_size = 256*5
 
 
 if (
@@ -56,13 +57,13 @@ overfit = False
 if overfit:
     nmax = 10
     train_idx = test_idx = val_idx = train_idx[:300]
-    train_ds, scaler = load_cached_data("tiny_cache/train_ds.p", train_idx, None, supermag_data, omni_data, targets)
-    test_ds, _ = load_cached_data("tiny_cache/test_ds.p", test_idx, scaler, supermag_data, omni_data, targets)
-    val_ds, _ = load_cached_data("tiny_cache/val_ds.p", val_idx, scaler, supermag_data, omni_data, targets)
+    train_ds, scaler = load_cached_data("tiny_cache/train_ds.p", train_idx, None, supermag_data, omni_data, targets, past_omni_length, future_length)
+    test_ds, _ = load_cached_data("tiny_cache/test_ds.p", test_idx, scaler, supermag_data, omni_data, targets, past_omni_length, future_length)
+    val_ds, _ = load_cached_data("tiny_cache/val_ds.p", val_idx, scaler, supermag_data, omni_data, targets, past_omni_length, future_length)
 else:
-    train_ds, scaler = load_cached_data("cache/train_ds.p", train_idx, None, supermag_data, omni_data, targets)
-    test_ds, _ = load_cached_data("cache/test_ds.p", test_idx, scaler, supermag_data, omni_data, targets)
-    val_ds, _ = load_cached_data("cache/val_ds.p", val_idx, scaler, supermag_data, omni_data, targets)
+    train_ds, scaler = load_cached_data("cache/train_ds.p", train_idx, None, supermag_data, omni_data, targets, past_omni_length, future_length)
+    test_ds, _ = load_cached_data("cache/test_ds.p", test_idx, scaler, supermag_data, omni_data, targets, past_omni_length, future_length)
+    val_ds, _ = load_cached_data("cache/val_ds.p", val_idx, scaler, supermag_data, omni_data, targets, past_omni_length, future_length)
 
 # load weimer data for debugging
 if os.path.exists("cache/wiemer_ds.p"):
@@ -90,6 +91,7 @@ model = NeuralRNNWiemer(
     future_length,
     train_ds.omni_features,
     train_ds.supermag_features,
+    omni_resolution,
     nmax,
     targets_idx,
 )
@@ -107,6 +109,6 @@ trainer = pl.Trainer(
     gpus=-1,
     check_val_every_n_epoch=5,
     logger=wandb_logger,
-    callbacks=[checkpoint_callback],#, EarlyStopping(monitor='val_R2')]
+    callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
 )
 trainer.fit(model, train_loader, val_loader)
