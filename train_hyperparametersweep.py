@@ -148,7 +148,6 @@ def train(config):
         trainer = pl.Trainer(
         check_val_every_n_epoch=5,
         logger=wandb_logger,
-        max_epochs=max_epochs,
         callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
     )
     

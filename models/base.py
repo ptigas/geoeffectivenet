@@ -63,7 +63,7 @@ class BaseModel(pl.LightningModule):
         loss = ((future_supermag - predictions) ** 2).mean()
 
         # sparsity L2
-        loss += self.l2 * torch.norm(coeffs, p=2)
+        loss += self.l2reg * torch.norm(coeffs, p=2)
 
         self.log("train_MSE", loss, on_step=False, on_epoch=True)
         self.log(
