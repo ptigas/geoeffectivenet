@@ -30,9 +30,9 @@ class NeuralRNNWiemer(BaseModel):
         supermag_features,
         omni_resolution,
         nmax,
-        targets_idx,
+        targets_idx,**kwargs
     ):
-        super(NeuralRNNWiemer, self).__init__()
+        super(NeuralRNNWiemer, self).__init__(**kwargs)
 
         # idx of targets in dataset
         self.targets_idx = targets_idx
