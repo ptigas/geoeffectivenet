@@ -1,0 +1,30 @@
+program: train_hyperparametersweep.py
+method: bayes
+metric:
+  name: val_MSE
+  goal: minimize
+parameters:
+  learning_rate:
+    distribution: log_uniform
+    min: -5
+    max: -3
+  batch_size:
+    distribution: categorical
+    values: 
+      - 256
+      - 512
+      - 768
+      - 1024
+      - 1280
+      - 1536
+      - 1792
+  l2reg:
+    distribution: log_uniform
+    min: -6
+    max: -3 
+  nmax:
+    distribution: categorical
+    values:
+      - 15
+      - 20
+      - 25
