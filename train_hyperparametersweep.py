@@ -60,7 +60,7 @@ def train(config):
         or not os.path.exists("cache/test_ds.p")
         or not os.path.exists("cache/val_ds.p")
     ):
-        supermag_data = SuperMAGIAGADataset(*get_iaga_data("data_local/iaga/2013/"))
+        supermag_data = SuperMAGIAGADataset(*get_iaga_data("data_local/iaga/2013/2013/"))
         omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year="2013"))
 
         idx = list(range(len(supermag_data.dates)))
