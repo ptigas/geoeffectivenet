@@ -124,5 +124,8 @@ def load_cached_data(filename, idx, scaler, supermag_data, omni_data, targets, p
             future_length=future_length,
             f107_dataset="data_local/f107.npz",
         )
+        directorypath = '/'.join(filename.split('/')[:-1])
+        if not os.path.isdir(directorypath):
+            os.makedirs(directorypath)
         pickle.dump(data, open(filename, "wb"))
         return data, data.scaler

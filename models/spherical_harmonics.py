@@ -4,6 +4,9 @@ from sympy import (Ynm, symbols)
 
 from utils.sympy import SymPyModule
 
+#---------------- Torch device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#------------------
 
 class SphericalHarmonics(torch.nn.Module):
     def __init__(self, nmax=20):
@@ -29,7 +32,7 @@ class SphericalHarmonics(torch.nn.Module):
         for m in self.ylm:
             e = m(phi=phi, theta=theta)
             if "complex" not in str(e.dtype):
-                re, im = e, torch.zeros_like(e).cuda()
+                re, im = e, torch.zeros_like(e).to(device)
             else:
                 re, im = e.real, e.imag
             if len(re.shape) < 3:

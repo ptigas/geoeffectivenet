@@ -127,19 +127,32 @@ def train(config):
     model.scaler = scaler
 
     # save the scaler to de-standarize prediction
-    pickle.dump(scaler, open('checkpoints/scalers.p', "wb"))
+    checkpoint_path = f"checkpoints_{int(learning_rate*1e5)}_{int(batch_size)}_{int(l2reg*1e6)}_{nmax}"
+    if not os.path.isdir(checkpoint_path):
+        os.makedirs(checkpoint_path)
+    pickle.dump(scaler, open(f'{checkpoint_path}/scalers.p', "wb"))
 
     wandb_logger = WandbLogger(project="geoeffectivenet", log_model=True)
-    wandb_logger.watch(model.net)
+    wandb_logger.watch(model)
 
-    checkpoint_callback = ModelCheckpoint(dirpath="checkpoints")
-    trainer = pl.Trainer(
+    checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_path)
+    if torch.cuda.is_available():
+        trainer = pl.Trainer(
         gpus=-1,
         check_val_every_n_epoch=5,
         logger=wandb_logger,
         max_epochs=max_epochs,
         callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
     )
+    else:
+        trainer = pl.Trainer(
+        check_val_every_n_epoch=5,
+        logger=wandb_logger,
+        max_epochs=max_epochs,
+        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
+    )
+    
+    
     trainer.fit(model, train_loader, val_loader)
 
 

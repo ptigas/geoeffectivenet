@@ -1,4 +1,5 @@
 import io
+from os import device_encoding
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -11,6 +12,10 @@ from torchvision.transforms import ToTensor
 
 from utils.helpers import basis_matrix
 import matplotlib.colors
+
+#---------------- Torch device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#------------------
 
 
 class SqueezedNorm(matplotlib.colors.Normalize):
@@ -79,7 +84,7 @@ def spherical_plot_forecasting(nmax, coeffs, predictions, target, mlt, mcolat, m
         grid_theta_spherical.ravel().reshape(-1),
         grid_phi_spherical.ravel().reshape(-1),
     )
-    basis_grid = torch.Tensor(basis_grid).double().squeeze(0).cuda()
+    basis_grid = torch.Tensor(basis_grid).double().squeeze(0).to(device)
 
     cm.get_cmap("viridis")
 

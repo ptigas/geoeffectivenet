@@ -16,6 +16,9 @@ import wandb
 from utils.helpers import R2
 from utils.plot import spherical_plot_forecasting
 
+#---------------- Torch device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#------------------
 
 # define a function which returns an image as numpy array from figure
 def get_img_from_fig(fig):
@@ -134,20 +137,20 @@ class BaseModel(pl.LightningModule):
                 future_dates,
                 (mlt, mcolat),
             ) in self.wiemer_data:
-                past_omni = past_omni.cuda()
-                past_supermag = past_supermag.cuda()
-                mlt = mlt.cuda()
-                mcolat = mcolat.cuda()
-                past_dates = past_dates.cuda()
-                future_dates = future_dates.cuda()
+                past_omni = past_omni.to(device)
+                past_supermag = past_supermag.to(device)
+                mlt = mlt.to(device)
+                mcolat = mcolat.to(device)
+                past_dates = past_dates.to(device)
+                future_dates = future_dates.to(device)
 
                 _, _coeffs, pred = self(
                     past_omni, past_supermag, mlt, mcolat, past_dates, future_dates
                 )
 
-                predictions.append(pred.cuda())
-                coeffs.append(_coeffs.cuda())
-                targets.append(future_supermag[..., target_col].cuda())
+                predictions.append(pred.to(device))
+                coeffs.append(_coeffs.to(device))
+                targets.append(future_supermag[..., target_col].to(device))
             predictions = torch.cat(predictions).detach()
             coeffs = torch.cat(coeffs).detach()
             targets = torch.cat(targets).detach().squeeze(1)
@@ -156,8 +159,8 @@ class BaseModel(pl.LightningModule):
             targets[torch.isnan(targets)] = 0
 
             _mean, _std = self.scaler['supermag']
-            predictions = predictions*torch.Tensor(_std).cuda() + torch.Tensor(_mean).cuda()
-            targets = targets*torch.Tensor(_std).cuda() + torch.Tensor(_mean).cuda()
+            predictions = predictions*torch.Tensor(_std).to(device) + torch.Tensor(_mean).to(device)
+            targets = targets*torch.Tensor(_std).to(device) + torch.Tensor(_mean).to(device)
 
             self.log(
                 "wiemer_R2",
@@ -182,7 +185,7 @@ class BaseModel(pl.LightningModule):
                     ]
                 }
             )
-            nice_idx = [500]
+            nice_idx = [0]
 
             # dbe_nez
             pred_sphere = spherical_plot_forecasting(

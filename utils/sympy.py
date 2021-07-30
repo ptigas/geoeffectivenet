@@ -6,6 +6,10 @@ import torch
 from sympy import (Dummy, I, S, cos, exp, factorial, latex, pi, sin, sqrt,
                    symbols, sympify, var)
 
+#---------------- Torch device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#------------------
+
 
 def _reduce(fn):
     def fn_(*args):
@@ -66,7 +70,7 @@ _global_func_lookup = {
     sympy.Determinant: torch.det,
     sympy.core.numbers.ImaginaryUnit: lambda *args: torch.complex(
         torch.Tensor([0]), torch.Tensor([1])
-    ).cuda(),
+    ).to(device),
 }
 
 
@@ -182,6 +186,6 @@ class SymModule(torch.nn.Module):
     def forward(self, phi, theta):
         res = self.sym(theta=theta, phi=phi)
         if "complex" not in str(res.dtype):
-            return res, torch.zeros_like(res).cuda()
+            return res, torch.zeros_like(res).to(device)
         else:
             return res.real, res.imag
