@@ -31,11 +31,13 @@ def MSE(a, b):
 
 
 class BaseModel(pl.LightningModule):
-    def __init__(self):
+    def __init__(self,**kwargs):
         super().__init__()
+        self.lr = kwargs.pop('learning_rate',1e-4)
+        self.l2reg = kwargs.pop('l2reg',1e-4)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=1e-4)
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
 
     def training_step(self, training_batch, batch_idx):
         (
@@ -58,7 +60,7 @@ class BaseModel(pl.LightningModule):
         loss = ((future_supermag - predictions) ** 2).mean()
 
         # sparsity L2
-        loss += 1e-4 * torch.norm(coeffs, p=2)
+        loss += self.l2 * torch.norm(coeffs, p=2)
 
         self.log("train_MSE", loss, on_step=False, on_epoch=True)
         self.log(
