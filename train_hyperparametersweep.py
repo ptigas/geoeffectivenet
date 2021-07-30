@@ -33,12 +33,11 @@ from dataloader import (OMNIDataset, ShpericalHarmonicsDataset,
 
 torch.set_default_dtype(torch.float64)  # this is important else it will overflow
 
-wandb_logger = WandbLogger(project="geoeffectivenet", log_model=True)
-
-hyperparameter_defaults = dict( future_length = 1, past_omni_length = 600,
+hyperparameter_defaults = dict(future_length = 1, past_omni_length = 600,
                                 omni_resolution = 10, nmax = 20, 
                                 targets = ["dbe_nez", "dbn_nez"],lag = 1,
-                                learning_rate = 1e-04,batch_size = 256*5)
+                                learning_rate = 1e-04,batch_size = 256*5,
+                                l2reg=1e-4,epochs=1)
 wandb.init(config=hyperparameter_defaults)
 config = wandb.config
 
@@ -53,7 +52,9 @@ def train(config):
     lag = config.lag
     learning_rate = config.learning_rate
     batch_size = config.batch_size
-    
+    l2reg=config.l2reg
+    max_epochs=config.epochs,
+
     if (
         not os.path.exists("cache/train_ds.p")
         or not os.path.exists("cache/test_ds.p")
@@ -116,7 +117,8 @@ def train(config):
         train_ds.supermag_features,
         omni_resolution,
         nmax,
-        targets_idx,
+        targets_idx,learning_rate = learning_rate,
+        l2reg=l2reg
     )
     model = model.double()
 
@@ -127,11 +129,21 @@ def train(config):
     # save the scaler to de-standarize prediction
     pickle.dump(scaler, open('checkpoints/scalers.p', "wb"))
 
+    wandb_logger = WandbLogger(project="geoeffectivenet", log_model=True)
+    wandb_logger.watch(model.net)
+
     checkpoint_callback = ModelCheckpoint(dirpath="checkpoints")
     trainer = pl.Trainer(
         gpus=-1,
         check_val_every_n_epoch=5,
         logger=wandb_logger,
+        max_epochs=max_epochs,
         callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
     )
     trainer.fit(model, train_loader, val_loader)
+
+
+if __name__ == '__main__':
+
+    print(f'Starting a run with {config}')
+    train(config)
