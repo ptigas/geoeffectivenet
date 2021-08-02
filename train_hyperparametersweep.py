@@ -36,7 +36,8 @@ torch.set_default_dtype(torch.float64)  # this is important else it will overflo
 hyperparameter_defaults = dict(future_length = 1, past_omni_length = 600,
                                 omni_resolution = 10, nmax = 20,lag = 1,
                                 learning_rate = 1e-04,batch_size = 256*5,
-                                l2reg=1e-4,epochs=1)
+                                l2reg=1e-4,epochs=1,dropout_prob=0.5,n_hidden=16,
+                                loss='MSE')
 wandb.init(config=hyperparameter_defaults)
 config = wandb.config
 
@@ -53,6 +54,9 @@ def train(config):
     batch_size = config.batch_size
     l2reg=config.l2reg
     max_epochs=config.epochs,
+    n_hidden=config.n_hidden
+    dropout_prob=config.dropout_prob
+    loss = config.loss
 
     if (
         not os.path.exists("cache/train_ds.p")
@@ -116,7 +120,10 @@ def train(config):
         omni_resolution,
         nmax,
         targets_idx,learning_rate = learning_rate,
-        l2reg=l2reg
+        l2reg=l2reg,
+        dropout_prob=dropout_prob,
+        n_hidden=n_hidden,
+        loss=loss
     )
     model = model.double()
 

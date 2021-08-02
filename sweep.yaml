@@ -11,8 +11,6 @@ parameters:
   batch_size:
     distribution: categorical
     values: 
-      - 256
-      - 512
       - 768
       - 1024
       - 1280
@@ -28,3 +26,36 @@ parameters:
       - 15
       - 20
       - 25
+  omni_resolution:
+    distribution: categorical
+    values:
+      - 1
+      - 5
+      - 10
+      - 20
+  past_omni_length:
+    distribution: categorical
+    values:
+      - 120
+      - 360
+      - 600
+      - 840
+      - 960
+  n_hidden:
+    distribution: categorical
+    values:
+      - 4
+      - 8
+      - 16
+      - 32
+      - 64
+  dropout_prob:
+    distribution: uniform
+    min: 0.0
+    max: 1.0
+  loss:
+    values:
+      - 'MSE'
+      - 'MAE'
+      - 'SumSE'
+  

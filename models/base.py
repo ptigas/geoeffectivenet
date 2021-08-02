@@ -32,12 +32,25 @@ def get_img_from_fig(fig):
 def MSE(a, b):
     return ((a-b)**2).mean()
 
+def SumSE(a, b):
+    return ((a-b)**2).sum()
+
+def MAE(a, b):
+    return (torch.abs(a-b)).mean()
+
 
 class BaseModel(pl.LightningModule):
     def __init__(self,**kwargs):
         super().__init__()
+        ldict = {'MSE':MSE,'MAE':MAE,'SumSE':SumSE}
         self.lr = kwargs.pop('learning_rate',1e-4)
         self.l2reg = kwargs.pop('l2reg',1e-4)
+        losskey = kwargs.pop('loss',None)
+        try:
+            self.lossfun = ldict[losskey]
+        except:
+            self.lossfun = MSE
+        
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -60,7 +73,8 @@ class BaseModel(pl.LightningModule):
         future_supermag[torch.isnan(future_supermag)] = 0
         target_col = self.targets_idx
         future_supermag = future_supermag[..., target_col].squeeze(1)
-        loss = ((future_supermag - predictions) ** 2).mean()
+        # loss = ((future_supermag - predictions) ** 2).mean()
+        loss = self.lossfun(future_supermag,predictions)
 
         # sparsity L2
         loss += self.l2reg * torch.norm(coeffs, p=2)
@@ -114,7 +128,8 @@ class BaseModel(pl.LightningModule):
         # unscaled_future_supermag = self.scaler['supermag'].inverse_transform(future_supermag.cpu().numpy())
         # unscaled_predictions = self.scaler['supermag'].inverse_transform(predictions.cpu().numpy())
 
-        loss = ((future_supermag - predictions) ** 2).mean()
+        # loss = ((future_supermag - predictions) ** 2).mean()
+        loss = self.lossfun(future_supermag,predictions)
 
         self.log(
             "val_R2",

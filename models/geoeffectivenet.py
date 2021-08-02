@@ -39,7 +39,8 @@ class NeuralRNNWiemer(BaseModel):
 
         self.omni_resolution = omni_resolution
 
-        hidden = 16
+        hidden = kwargs.pop('n_hidden',16)
+        dropout_prob = kwargs.pop('dropout',0.5)
         levels = 2
         kernel_size = 24
         levels = levels
@@ -59,7 +60,7 @@ class NeuralRNNWiemer(BaseModel):
         self.encoder_mlp = nn.Sequential(
             nn.Linear(hidden, 16),
             nn.ELU(inplace=True),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=dropout_prob),
             nn.Linear(16, n_coeffs*len(targets_idx), bias=False),  # 882
         )
 
