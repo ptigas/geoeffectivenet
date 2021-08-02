@@ -34,8 +34,7 @@ from dataloader import (OMNIDataset, ShpericalHarmonicsDataset,
 torch.set_default_dtype(torch.float64)  # this is important else it will overflow
 
 hyperparameter_defaults = dict(future_length = 1, past_omni_length = 600,
-                                omni_resolution = 10, nmax = 20, 
-                                targets = ["dbe_nez", "dbn_nez"],lag = 1,
+                                omni_resolution = 10, nmax = 20,lag = 1,
                                 learning_rate = 1e-04,batch_size = 256*5,
                                 l2reg=1e-4,epochs=1)
 wandb.init(config=hyperparameter_defaults)
@@ -48,7 +47,7 @@ def train(config):
     past_omni_length = config.past_omni_length
     omni_resolution = config.omni_resolution
     nmax = config.nmax
-    targets = config.targets
+    targets = ["dbe_nez", "dbn_nez"] #config.targets
     lag = config.lag
     learning_rate = config.learning_rate
     batch_size = config.batch_size
@@ -105,9 +104,8 @@ def train(config):
         val_ds, batch_size=batch_size, shuffle=False, num_workers=8
     )
     plot_loader = data.DataLoader(val_ds, batch_size=4, shuffle=False)
-
+    
     targets_idx = [np.where(train_ds.supermag_features == target)[0][0] for target in targets]
-
 
     # initialize model
     model = NeuralRNNWiemer(
@@ -150,7 +148,6 @@ def train(config):
         logger=wandb_logger,
         callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
     )
-    
     
     trainer.fit(model, train_loader, val_loader)
 

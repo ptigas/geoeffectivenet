@@ -103,7 +103,7 @@ class BaseModel(pl.LightningModule):
         ) = val_batch
 
         _, coeffs, predictions = self(past_omni, past_supermag, mlt, mcolat, past_dates, future_dates)
-
+        
         predictions[torch.isnan(predictions)] = 0
         future_supermag[torch.isnan(future_supermag)] = 0
         target_col = self.targets_idx
@@ -121,8 +121,9 @@ class BaseModel(pl.LightningModule):
             R2(future_supermag, predictions).mean(),
             on_step=False,
             on_epoch=True,
+            prog_bar=True
         )
-        self.log("val_MSE", loss, on_step=False, on_epoch=True)
+        self.log("val_MSE", loss, on_step=False, on_epoch=True,prog_bar=True)
 
         if batch_idx == 0:
             # hack: need to find a callback way
