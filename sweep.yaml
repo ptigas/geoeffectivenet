@@ -5,17 +5,12 @@ metric:
   goal: minimize
 parameters:
   learning_rate:
-    distribution: log_uniform
-    min: -5
-    max: -3
-  batch_size:
     distribution: categorical
-    values: 
-      - 768
-      - 1024
-      - 1280
-      - 1536
-      - 1792
+    values:
+      - 1e-4
+      - 5e-4
+      - 5e-5
+      - 1e-5
   l2reg:
     distribution: log_uniform
     min: -6
@@ -30,32 +25,23 @@ parameters:
     distribution: categorical
     values:
       - 1
-      - 5
-      - 10
-      - 20
   past_omni_length:
     distribution: categorical
     values:
       - 120
-      - 360
       - 600
-      - 840
-      - 960
   n_hidden:
     distribution: categorical
     values:
-      - 4
-      - 8
       - 16
-      - 32
       - 64
   dropout_prob:
     distribution: uniform
-    min: 0.0
-    max: 1.0
+    min: 0.4
+    max: 0.8
   loss:
     values:
-      - 'MSE'
-      - 'MAE'
-      - 'SumSE'
+      - 'MaxSqEr'
+      # - 'MAE'
+      # - 'SumSE'
   
