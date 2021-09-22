@@ -33,13 +33,25 @@ from dataloader import (OMNIDataset, ShpericalHarmonicsDataset,
 
 torch.set_default_dtype(torch.float64)  # this is important else it will overflow
 
-hyperparameter_defaults = dict(future_length = 1, past_omni_length = 600,
-                                omni_resolution = 10, nmax = 20,lag = 1,
-                                learning_rate = 1e-04,batch_size = 256*5,
-                                l2reg=1e-4,epochs=1,dropout_prob=0.5,n_hidden=16,
-                                loss='MSE')
+# hyperparameter_defaults = dict(future_length = 1, past_omni_length = 900,
+#                                 omni_resolution = 1, nmax = 25,lag = 1,
+#                                 learning_rate = 1e-04,batch_size = 256*8*2,
+#                                 l2reg=3e-3,epochs = 10000, dropout_prob=0.71,n_hidden=64,
+#                                 loss='MSE')
+
+
+hyperparameter_best = dict(future_length = 1, past_omni_length = 120,
+                                omni_resolution = 1, nmax = 25,lag = 1,
+                                learning_rate = 1e-05,batch_size = 4096,
+                                l2reg=1.6e-2,epochs = 1000, dropout_prob=0.5,n_hidden=64,
+                                loss='MaxSqEr')
+                                # learning_rate originally 1e-5
+
+hyperparameter_defaults = hyperparameter_best
+
 wandb.init(config=hyperparameter_defaults)
 config = wandb.config
+# wandb.run.name = "Best_hyperparam_tuning_MSE"
 
 #----- Data loading also depends on the sweep parameters.
 #----- Hence this process will be repeated per training cycle.
@@ -53,7 +65,7 @@ def train(config):
     learning_rate = config.learning_rate
     batch_size = config.batch_size
     l2reg=config.l2reg
-    max_epochs=config.epochs,
+    max_epochs = config.epochs
     n_hidden=config.n_hidden
     dropout_prob=config.dropout_prob
     loss = config.loss
@@ -132,7 +144,8 @@ def train(config):
     model.scaler = scaler
 
     # save the scaler to de-standarize prediction
-    checkpoint_path = f"checkpoints_{int(learning_rate*1e5)}_{int(batch_size)}_{int(l2reg*1e6)}_{nmax}"
+    checkpoint_path = f"checkpoints_{int(learning_rate*1e5)}_{int(batch_size)}_{int(l2reg*1e6)}_{nmax}_{loss}"
+    # checkpoint_path = "Best_hyperparam_tuning_SumSE"
     if not os.path.isdir(checkpoint_path):
         os.makedirs(checkpoint_path)
     pickle.dump(scaler, open(f'{checkpoint_path}/scalers.p', "wb"))
@@ -147,13 +160,13 @@ def train(config):
         check_val_every_n_epoch=5,
         logger=wandb_logger,
         max_epochs=max_epochs,
-        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
+        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 10)]
     )
     else:
         trainer = pl.Trainer(
         check_val_every_n_epoch=5,
         logger=wandb_logger,
-        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE')]
+        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 10)]
     )
     
     trainer.fit(model, train_loader, val_loader)
