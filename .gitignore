@@ -143,3 +143,6 @@ tiny_cache/
 checkpoints/
 lightning_logs/
 data_local/
+
+# Checkpoint files
+checkpoints_*/

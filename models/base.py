@@ -38,11 +38,13 @@ def SumSE(a, b):
 def MAE(a, b):
     return (torch.abs(a-b)).mean()
 
+def MaxSqEr(true, pred):
+    return torch.max(((true - pred)**2).mean(dim=(0,1)),dim=-1)[0]+MSE(true,pred)
 
 class BaseModel(pl.LightningModule):
     def __init__(self,**kwargs):
         super().__init__()
-        ldict = {'MSE':MSE,'MAE':MAE,'SumSE':SumSE}
+        ldict = {'MSE':MSE,'MAE':MAE,'SumSE':SumSE,'MaxSqEr':MaxSqEr}
         self.lr = kwargs.pop('learning_rate',1e-4)
         self.l2reg = kwargs.pop('l2reg',1e-4)
         losskey = kwargs.pop('loss',None)
@@ -130,7 +132,7 @@ class BaseModel(pl.LightningModule):
 
         # loss = ((future_supermag - predictions) ** 2).mean()
         loss = self.lossfun(future_supermag,predictions)
-
+        
         self.log(
             "val_R2",
             R2(future_supermag, predictions).mean(),
@@ -138,7 +140,7 @@ class BaseModel(pl.LightningModule):
             on_epoch=True,
             prog_bar=True
         )
-        self.log("val_MSE", loss, on_step=False, on_epoch=True,prog_bar=True)
+        self.log("val_MSE", MSE(future_supermag,predictions), on_step=False, on_epoch=True,prog_bar=True)
 
         if batch_idx == 0:
             # hack: need to find a callback way
