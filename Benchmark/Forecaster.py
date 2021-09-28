@@ -11,7 +11,7 @@ Will also Generate Weimer forecast at Supermag locations
 
 """
 
-def Forecaster(dataloader,model,dbe_mean,dbe_std,dbn_mean,dbn_std):
+def Forecaster(dataloader,model,dbe_mean,dbe_std,dbn_mean,dbn_std,target_index):
     with torch.no_grad():
         val_loss = {'dbe':[],'dbn':[]}
         Predictions = {'dbe':[],'dbn':[]}
