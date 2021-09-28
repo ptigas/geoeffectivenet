@@ -89,12 +89,12 @@ def get_wiemer_data(targets, scaler, lag, past_omni_length, future_length):
         for k in f.keys():
             weimer[k] = f.get(k)[:]
 
-    sg_data = SuperMAGIAGADataset(*get_iaga_data("data_local/iaga/2015/"))
+    sg_data = SuperMAGIAGADataset(*get_iaga_data("data_local/iaga/2015/2015/"))
     omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year="2015"))
     weimer_times_unix = Time(weimer["JDTIMES"], format="jd").to_value("unix")
-    wstart = np.argmin(np.abs(weimer_times_unix[0] - sg_data.dates)) - past_omni_length
+    wstart = np.argmin(np.abs(weimer_times_unix[0] - sg_data.dates)) - past_omni_length -lag - future_length +2
     wend = (
-        np.argmin(np.abs(weimer_times_unix[-1] - sg_data.dates)) + lag + future_length
+        np.argmin(np.abs(weimer_times_unix[-1] - sg_data.dates)) + 1
     )
     weimerinds = np.arange(wstart, wend).astype(int)
     return ShpericalHarmonicsDataset(

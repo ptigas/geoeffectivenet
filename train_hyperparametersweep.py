@@ -40,18 +40,18 @@ torch.set_default_dtype(torch.float64)  # this is important else it will overflo
 #                                 loss='MSE')
 
 
-hyperparameter_best = dict(future_length = 1, past_omni_length = 120,
-                                omni_resolution = 1, nmax = 25,lag = 1,
-                                learning_rate = 1e-05,batch_size = 4096,
-                                l2reg=1.6e-2,epochs = 1000, dropout_prob=0.5,n_hidden=64,
-                                loss='MaxSqEr')
+hyperparameter_best = dict(future_length = 1, past_omni_length = 240,
+                                omni_resolution = 1, nmax = 20,lag = 1,
+                                learning_rate = 5e-04,batch_size = 4096,
+                                l2reg=1.6e-5,epochs = 1000, dropout_prob=0.1,n_hidden=64,
+                                loss='MAE_BH')
                                 # learning_rate originally 1e-5
 
 hyperparameter_defaults = hyperparameter_best
 
 wandb.init(config=hyperparameter_defaults)
 config = wandb.config
-# wandb.run.name = "Best_hyperparam_tuning_MSE"
+wandb.run.name = "MAEBH_2015"
 
 #----- Data loading also depends on the sweep parameters.
 #----- Hence this process will be repeated per training cycle.
@@ -75,8 +75,8 @@ def train(config):
         or not os.path.exists("cache/test_ds.p")
         or not os.path.exists("cache/val_ds.p")
     ):
-        supermag_data = SuperMAGIAGADataset(*get_iaga_data("data_local/iaga/2013/2013/"))
-        omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year="2013"))
+        supermag_data = SuperMAGIAGADataset(*get_iaga_data("data_local/iaga/2015/2015/"))
+        omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year="2015"))
 
         idx = list(range(len(supermag_data.dates)))
         train_idx = idx[: int(len(idx) * 0.7)]
@@ -144,8 +144,8 @@ def train(config):
     model.scaler = scaler
 
     # save the scaler to de-standarize prediction
-    checkpoint_path = f"checkpoints_{int(learning_rate*1e5)}_{int(batch_size)}_{int(l2reg*1e6)}_{nmax}_{loss}"
-    # checkpoint_path = "Best_hyperparam_tuning_SumSE"
+    # checkpoint_path = f"checkpoints_{int(learning_rate*1e5)}_{int(batch_size)}_{int(l2reg*1e6)}_{nmax}_{loss}"
+    checkpoint_path = "MAEBH_2015"
     if not os.path.isdir(checkpoint_path):
         os.makedirs(checkpoint_path)
     pickle.dump(scaler, open(f'{checkpoint_path}/scalers.p', "wb"))
@@ -160,13 +160,13 @@ def train(config):
         check_val_every_n_epoch=5,
         logger=wandb_logger,
         max_epochs=max_epochs,
-        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 10)]
+        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 100)]
     )
     else:
         trainer = pl.Trainer(
         check_val_every_n_epoch=5,
         logger=wandb_logger,
-        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 10)]
+        callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 100)]
     )
     
     trainer.fit(model, train_loader, val_loader)

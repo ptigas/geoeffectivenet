@@ -108,10 +108,10 @@ class ShpericalHarmonicsDataset(data.Dataset):
         f107_data = np.load(f107_dataset)
         f107 = []
         for date in tqdm.tqdm(self.dates):
-            mask = f107_data["dates"] == np.datetime64(
+            match = np.argmin(np.abs(f107_data["dates"]- np.datetime64(
                 datetime.utcfromtimestamp(date).replace(hour=0, minute=0)
-            )
-            match = np.where(mask)[0][0]
+            )))
+            # match = np.where(mask)[0][0]
             val = f107_data["f107"][match]
             f107.append(val)
         f107 = np.array(f107)
