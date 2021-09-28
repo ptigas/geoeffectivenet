@@ -39,12 +39,21 @@ def MAE(a, b):
     return (torch.abs(a-b)).mean()
 
 def MaxSqEr(true, pred):
-    return torch.max(((true - pred)**2).mean(dim=(0,1)),dim=-1)[0]+MSE(true,pred)
+    return torch.sum(((true - pred)**2).mean(dim=(0,1)),dim=-1)[0]+MSE(true,pred)
+
+def SqSqEr(true, pred):
+    return ((true-pred)**4).mean()
+
+def MAE_BH(a, b):
+    return (torch.abs(a-b)).mean()+torch.abs((a**2).sum(dim=-1) - (b**2).sum(dim=-1)).mean()
+
+def CompErr(true,pred):
+    return ((true - pred)**2).mean(dim=(0,1)).sum()+torch.abs((true**2).sum(dim=-1) - (pred**2).sum(dim=-1)).mean()
 
 class BaseModel(pl.LightningModule):
     def __init__(self,**kwargs):
         super().__init__()
-        ldict = {'MSE':MSE,'MAE':MAE,'SumSE':SumSE,'MaxSqEr':MaxSqEr}
+        ldict = {'MSE':MSE,'MAE':MAE,'SumSE':SumSE,'MaxSqEr':MaxSqEr,'SqSqEr':SqSqEr,'CompErr':CompErr,'MAE_BH':MAE_BH}
         self.lr = kwargs.pop('learning_rate',1e-4)
         self.l2reg = kwargs.pop('l2reg',1e-4)
         losskey = kwargs.pop('loss',None)
@@ -79,7 +88,7 @@ class BaseModel(pl.LightningModule):
         loss = self.lossfun(future_supermag,predictions)
 
         # sparsity L2
-        loss += self.l2reg * torch.norm(coeffs, p=2)
+        # loss += self.l2reg * torch.norm(coeffs, p=2)
 
         self.log("train_MSE", loss, on_step=False, on_epoch=True)
         self.log(
