@@ -36,7 +36,12 @@ def persist_to_file(file_name):
 
 def get_omni_data(path=None, year="2016"):
     import pandas as pd
-    return pd.read_hdf(path, key=year)
+    if isinstance(year,str):
+        return pd.read_hdf(path, key=year)
+    elif isinstance(year,list):
+        return pd.concat([pd.read_hdf(path, key=y) for y in year])
+    else:
+        raise TypeError("year must be either a list of years, or a single year.")
 
 
 def get_iaga_data(path, tiny=False):
