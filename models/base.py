@@ -163,7 +163,7 @@ class BaseModel(pl.LightningModule):
                 past_dates,
                 future_dates,
                 (mlt, mcolat),
-            ) in self.wiemer_data:
+            ) in self.wiemer_data['2015']:
                 past_omni = past_omni.to(device)
                 past_supermag = past_supermag.to(device)
                 mlt = mlt.to(device)
