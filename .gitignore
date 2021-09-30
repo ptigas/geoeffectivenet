@@ -148,3 +148,9 @@ data_local/
 checkpoints_*/
 Best_hyperparam_tuning_MSE_lr/
 Best_hyperparam_tuning_SumSE/
+CheckVariance*/
+CompErr*/
+MAE*/
+Overfit*/
+tmp/
+
