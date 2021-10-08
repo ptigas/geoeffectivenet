@@ -61,7 +61,7 @@ def get_iaga_data_as_list(year,tiny=False):
         raise TypeError("year must be either a list of years, or a single year.")
 
 
-def get_iaga_data(path, tiny=False):
+def get_iaga_data(path, tiny=False, load_data=True):
     import glob
 
     import tqdm
@@ -81,15 +81,16 @@ def get_iaga_data(path, tiny=False):
     data = []
     dates = []
     stations = []
-    idx = []
+    # idx = []
 
     print("loading supermag iaga data...")
     for i, f in enumerate(tqdm.tqdm(files)):
         x = np.load(f, allow_pickle=True)
-        data.append(x["data"])
+        if load_data:
+            data.append(x["data"])
         dates.append(x["dates"])
-        print(np.datetime64(datetime.utcfromtimestamp(dates[-1][0])))
-        idx.extend(data[-1].shape[0] * [i])
+        # print(np.datetime64(datetime.utcfromtimestamp(dates[-1][0])))
+        #idx.extend(data[-1].shape[0] * [i])
         features = x["features"]
         stations.append(x["stations"])
 
@@ -100,7 +101,8 @@ def get_iaga_data(path, tiny=False):
             axis=1,
         )
     dates = np.concatenate(dates)
-    data = np.concatenate(data)
+    if load_data:
+        data = np.concatenate(data)
     return dates, data, features
 
 def get_weimer_data_indices(targets, lag, past_omni_length, future_length,sg_data,weimer_years):
