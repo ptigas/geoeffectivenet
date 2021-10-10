@@ -10,13 +10,17 @@ import sklearn.model_selection
 from utils.data_utils import get_iaga_data, get_omni_data
 
 BUCKETS = 100
-LENGTH = 20
+LENGTH = 600
+LAG = 1
 
-def get_sequences(df, length):
+def get_sequences(df, length, lag):
     _df = df.copy()
-    _df['cluster'] = (_df['seconds'].diff() > 60).cumsum()
-    f = _df.groupby(['cluster']).apply(lambda x: x[:len(x)-length]['index']).reset_index(drop=True)
-    t = _df.groupby(['cluster']).apply(lambda x: x[length:]['index']).reset_index(drop=True)
+    _df['cluster'] = (_df['seconds'].diff() != 60).cumsum()
+    f = _df.groupby(['cluster']).apply(lambda x: x[:len(x)-length-lag]['index']).reset_index(drop=True)
+    t = _df.groupby(['cluster']).apply(lambda x: x[length+lag:]['index']).reset_index(drop=True)
+    
+    assert (t-f).max() == (t-f).min() == (length+lag)
+
     return list(zip(f, t))
 
 path = sys.argv[1]
@@ -51,16 +55,30 @@ for year in pd.unique(df['dates'].dt.year):
     assert len(df.loc[df['dates'].dt.year==year]) == len(omni)
 print('testing done')
 
-train_idx = get_sequences(train_df, 600)
-test_idx = get_sequences(test_df, 600)
-val_idx = get_sequences(val_df, 600)
+train_idx = get_sequences(train_df, LENGTH, LAG)
+test_idx = get_sequences(test_df, LENGTH, LAG)
+val_idx = get_sequences(val_df, LENGTH, LAG)
 
-with open('train.txt', 'w') as f: json.dump(train_idx, f)
-with open('test.txt', 'w') as f: json.dump(test_idx, f)
-with open('val.txt', 'w') as f: json.dump(val_idx, f)
+with open('train.txt', 'w') as f: 
+    json.dump({
+        "length": LENGTH,
+        "lag": LAG,
+        "years": pd.unique(df['dates'].dt.year).tolist(),
+        "idx": train_idx,
+    }, f)
 
-# get_sequences
-# f = df.groupby(['cluster', 'bucket']).apply(lambda x: x[:len(x)-LENGTH]['index']).reset_index(drop=True)
-# t = df.groupby(['cluster', 'bucket']).apply(lambda x: x[LENGTH:]['index']).reset_index(drop=True)
-# print(list(zip(f, t)))
-# import pdb; pdb.set_trace()
+with open('test.txt', 'w') as f: 
+    json.dump({
+        "length": LENGTH,
+        "lag": LAG,
+        "years": pd.unique(df['dates'].dt.year).tolist(),
+        "idx":test_idx
+    }, f)
+
+with open('val.txt', 'w') as f: 
+    json.dump({
+        "length": LENGTH,
+        "lag": LAG,
+        "years": pd.unique(df['dates'].dt.year).tolist(),
+        "idx": val_idx
+    }, f)
