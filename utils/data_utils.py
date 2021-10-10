@@ -43,6 +43,23 @@ def get_omni_data(path=None, year="2016"):
         return pd.concat([pd.read_hdf(path, key=y) for y in year])
     else:
         raise TypeError("year must be either a list of years, or a single year.")
+        
+def get_iaga_max_stations(tiny=False):
+    yearlist = list(np.arange(2010,2019).astype(int))
+    if tiny:
+        files = [g for y in yearlist for g in sorted(glob.glob(f"../full_data_panos/iaga/{y}/supermag_iaga_tiny*.npz"),key=lambda f: int(re.sub("\D", "", f)),) ]
+    else:
+        files = [g for y in yearlist for g in sorted(glob.glob(f"../full_data_panos/iaga/{y}/supermag_iaga_[!tiny]*.npz"),key=lambda f: int(re.sub("\D", "", f)),) ]
+    assert len(files) > 0
+    stations = []
+
+    print("loading supermag iaga data...")
+    for i, f in enumerate(tqdm.tqdm(files)):
+        x = np.load(f, allow_pickle=True)
+        stations.append(x["stations"])
+
+    max_stations = max([len(s) for s in stations])
+    return max_stations
 
 def get_iaga_data_as_list(year,tiny=False):
     if isinstance(year,str):
@@ -51,8 +68,9 @@ def get_iaga_data_as_list(year,tiny=False):
         dates = []
         data = [] 
         features = []
+        max_stations = get_iaga_max_stations()
         for y in year:
-            dt,dat,feat = get_iaga_data(f"data_local/iaga/{y}/{y}/",tiny=tiny)
+            dt,dat,feat = get_iaga_data(f"data_local/iaga/{y}/{y}/",tiny=tiny,max_stations=max_stations)
             dates.append(dt)
             data.append(dat)
             features.append(feat)
@@ -61,7 +79,7 @@ def get_iaga_data_as_list(year,tiny=False):
         raise TypeError("year must be either a list of years, or a single year.")
 
 
-def get_iaga_data(path, tiny=False, load_data=True):
+def get_iaga_data(path, tiny=False, load_data=True,max_stations=None):
     import glob
 
     import tqdm
@@ -94,7 +112,10 @@ def get_iaga_data(path, tiny=False, load_data=True):
         features = x["features"]
         stations.append(x["stations"])
 
-    max_stations = max([len(s) for s in stations])
+    if max_stations is None:
+        max_stations = max([len(s) for s in stations])
+    else:
+        max_stations = max_stations
     for i, d in enumerate(data):
         data[i] = np.concatenate(
             [d, np.zeros([d.shape[0], max_stations - d.shape[1], d.shape[2]]) * np.nan],
