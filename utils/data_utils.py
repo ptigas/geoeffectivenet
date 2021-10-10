@@ -56,7 +56,7 @@ def get_iaga_data_as_list(year,tiny=False):
             dates.append(dt)
             data.append(dat)
             features.append(feat)
-        return np.concatenate(dates,axis=0),np.concatenate(data,axis=0),np.concatenate(features,axis=0)
+        return np.concatenate(dates,axis=0),np.concatenate(data,axis=0),feat
     else:
         raise TypeError("year must be either a list of years, or a single year.")
 

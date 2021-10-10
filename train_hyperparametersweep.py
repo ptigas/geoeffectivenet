@@ -44,14 +44,14 @@ hyperparameter_best = dict(future_length = 1, past_omni_length = 240,
                                 omni_resolution = 1, nmax = 20,lag = 1,
                                 learning_rate = 5e-04,batch_size = 4096,
                                 l2reg=1.6e-5,epochs = 1000, dropout_prob=0.1,n_hidden=64,
-                                loss='MAE_BH')
+                                loss='MAE')
                                 # learning_rate originally 1e-5
 
 hyperparameter_defaults = hyperparameter_best
 
 wandb.init(config=hyperparameter_defaults)
 config = wandb.config
-wandb.run.name = "MAEBH_2015"
+wandb.run.name = "MAE_2015_SMAG"
 
 #----- Data loading also depends on the sweep parameters.
 #----- Hence this process will be repeated per training cycle.
@@ -124,7 +124,7 @@ def train(config):
     targets_idx = [np.where(train_ds.supermag_features == target)[0][0] for target in targets]
 
     # initialize model
-    model = NeuralRNNWiemer(
+    model = NeuralRNNWiemer_HidddenSuperMAG(
         past_omni_length,
         future_length,
         train_ds.omni_features,
@@ -145,7 +145,7 @@ def train(config):
 
     # save the scaler to de-standarize prediction
     # checkpoint_path = f"checkpoints_{int(learning_rate*1e5)}_{int(batch_size)}_{int(l2reg*1e6)}_{nmax}_{loss}"
-    checkpoint_path = "MAEBH_2015"
+    checkpoint_path = "MAE_2015_SMAG"
     if not os.path.isdir(checkpoint_path):
         os.makedirs(checkpoint_path)
     pickle.dump(scaler, open(f'{checkpoint_path}/scalers.p', "wb"))
