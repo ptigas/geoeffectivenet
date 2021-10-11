@@ -44,12 +44,12 @@ def get_omni_data(path=None, year="2016"):
     else:
         raise TypeError("year must be either a list of years, or a single year.")
         
-def get_iaga_max_stations(tiny=False):
+def get_iaga_max_stations(base="full_data_panos/iaga/",tiny=False):
     yearlist = list(np.arange(2010,2019).astype(int))
     if tiny:
-        files = [g for y in yearlist for g in sorted(glob.glob(f"../full_data_panos/iaga/{y}/supermag_iaga_tiny*.npz"),key=lambda f: int(re.sub("\D", "", f)),) ]
+        files = [g for y in yearlist for g in sorted(glob(f"{base}{y}/supermag_iaga_tiny*.npz"),key=lambda f: int(re.sub("\D", "", f)),) ]
     else:
-        files = [g for y in yearlist for g in sorted(glob.glob(f"../full_data_panos/iaga/{y}/supermag_iaga_[!tiny]*.npz"),key=lambda f: int(re.sub("\D", "", f)),) ]
+        files = [g for y in yearlist for g in sorted(glob(f"{base}{y}/supermag_iaga_[!tiny]*.npz"),key=lambda f: int(re.sub("\D", "", f)),) ]
     assert len(files) > 0
     stations = []
 
@@ -61,16 +61,16 @@ def get_iaga_max_stations(tiny=False):
     max_stations = max([len(s) for s in stations])
     return max_stations
 
-def get_iaga_data_as_list(year,tiny=False):
+def get_iaga_data_as_list(base,year,tiny=False):
     if isinstance(year,str):
-        return get_iaga_data(f"data_local/iaga/{year}/{year}/",tiny=tiny)
+        return get_iaga_data(f"{base}{year}/",tiny=tiny)
     elif isinstance(year,list):
         dates = []
         data = [] 
         features = []
-        max_stations = get_iaga_max_stations()
+        max_stations = get_iaga_max_stations(base=base)
         for y in year:
-            dt,dat,feat = get_iaga_data(f"data_local/iaga/{y}/{y}/",tiny=tiny,max_stations=max_stations)
+            dt,dat,feat = get_iaga_data(f"{base}{y}/",tiny=tiny,max_stations=max_stations)
             dates.append(dt)
             data.append(dat)
             features.append(feat)
@@ -80,18 +80,17 @@ def get_iaga_data_as_list(year,tiny=False):
 
 
 def get_iaga_data(path, tiny=False, load_data=True,max_stations=None):
-    import glob
 
     import tqdm
 
     if tiny:
         files = sorted(
-            [f for f in glob.glob(path + "supermag_iaga_tiny*.npz")],
+            [f for f in glob(path + "supermag_iaga_tiny*.npz")],
             key=lambda f: int(re.sub("\D", "", f)),
         )
     else:
         files = sorted(
-            [f for f in glob.glob(path + "supermag_iaga_[!tiny]*.npz")],
+            [f for f in glob(path + "supermag_iaga_[!tiny]*.npz")],
             key=lambda f: int(re.sub("\D", "", f)),
         )
     assert len(files) > 0
