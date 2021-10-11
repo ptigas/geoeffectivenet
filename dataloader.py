@@ -337,7 +337,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         past_supermag = None
         past_dates = self.dates[id_bucket,id_index:id_index+self.past_omni_length]
 
-        future_supermag = self.supermag_data[id_bucket,id_index+self.window_length]
+        future_supermag = np.expand_dims(self.supermag_data[id_bucket,id_index+self.window_length],axis=0)
         future_dates = self.dates[id_bucket,id_index+self.window_length]
 
         sm_future = NamedAccess(future_supermag, self.supermag_features)

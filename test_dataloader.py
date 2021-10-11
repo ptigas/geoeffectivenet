@@ -45,12 +45,11 @@ yearlist = list(np.arange(2010,2019).astype(str))
 omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year=yearlist))
 
 with open("test.txt") as f:
-    test_idx = np.asarray(json.load(f))
+    test_idx = np.asarray(json.load(f)['idx'])
 
 test_idx = test_idx[:100]
 test_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
             zero_supermag=False,scaler=None,training_batch=True,nmax=nmax)
-import pdb; pdb.set_trace()
 vals = test_ds[10]
