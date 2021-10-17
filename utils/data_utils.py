@@ -13,6 +13,9 @@ from torch.utils import data
 import h5py
 from glob import glob
 from astropy.time import Time
+import sys
+
+sys.path.append('../')
 from dataloader import (OMNIDataset, ShpericalHarmonicsDataset,
                         SuperMAGIAGADataset)
 
@@ -61,20 +64,25 @@ def get_iaga_max_stations(base="full_data_panos/iaga/",tiny=False):
     max_stations = max([len(s) for s in stations])
     return max_stations
 
-def get_iaga_data_as_list(base,year,tiny=False):
+def get_iaga_data_as_list(base,year,tiny=False,load_data=True):
     if isinstance(year,str):
-        return get_iaga_data(f"{base}{year}/",tiny=tiny)
+        return get_iaga_data(f"{base}{year}/",tiny=tiny,load_data=load_data)
     elif isinstance(year,list):
         dates = []
         data = [] 
         features = []
         max_stations = get_iaga_max_stations(base=base)
         for y in year:
-            dt,dat,feat = get_iaga_data(f"{base}{y}/",tiny=tiny,max_stations=max_stations)
+            dt,dat,feat = get_iaga_data(f"{base}{y}/",tiny=tiny,max_stations=max_stations,load_data=load_data)
             dates.append(dt)
-            data.append(dat)
             features.append(feat)
-        return np.concatenate(dates,axis=0),np.concatenate(data,axis=0),feat
+            if load_data:
+                data.append(dat)
+        dates = np.concatenate(dates,axis=0)  
+
+        if load_data:
+            data = np.concatenate(data,axis=0)   
+        return dates,data,feat
     else:
         raise TypeError("year must be either a list of years, or a single year.")
 
@@ -115,14 +123,14 @@ def get_iaga_data(path, tiny=False, load_data=True,max_stations=None):
         max_stations = max([len(s) for s in stations])
     else:
         max_stations = max_stations
-    for i, d in enumerate(data):
-        data[i] = np.concatenate(
-            [d, np.zeros([d.shape[0], max_stations - d.shape[1], d.shape[2]]) * np.nan],
-            axis=1,
-        )
-    dates = np.concatenate(dates)
     if load_data:
-        data = np.concatenate(data)
+        for i, d in enumerate(data):
+            data[i] = np.concatenate(
+                [d, np.zeros([d.shape[0], max_stations - d.shape[1], d.shape[2]]) * np.nan],
+                axis=1,
+            )
+    dates = np.concatenate(dates)
+
     return dates, data, features
 
 def get_weimer_data_indices(targets, lag, past_omni_length, future_length,sg_data,weimer_years):
