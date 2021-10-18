@@ -163,7 +163,59 @@ class BaseModel(pl.LightningModule):
                 past_dates,
                 future_dates,
                 (mlt, mcolat),
-            ) in self.wiemer_data['2015']:
+            ) in self.test_data:
+                past_omni = past_omni.to(device)
+                past_supermag = past_supermag.to(device)
+                mlt = mlt.to(device)
+                mcolat = mcolat.to(device)
+                past_dates = past_dates.to(device)
+                future_dates = future_dates.to(device)
+
+                _, _coeffs, pred = self(
+                    past_omni, past_supermag, mlt, mcolat, past_dates, future_dates
+                )
+
+                predictions.append(pred.to(device))
+                coeffs.append(_coeffs.to(device))
+                targets.append(future_supermag[..., target_col].to(device))
+            predictions = torch.cat(predictions).detach()
+            coeffs = torch.cat(coeffs).detach()
+            targets = torch.cat(targets).detach().squeeze(1)
+
+            predictions[torch.isnan(predictions)] = 0
+            targets[torch.isnan(targets)] = 0
+
+            _mean, _std = self.scaler['supermag']
+            predictions = predictions*torch.Tensor(_std).to(device) + torch.Tensor(_mean).to(device)
+            targets = targets*torch.Tensor(_std).to(device) + torch.Tensor(_mean).to(device)
+
+            self.log(
+                "test_R2",
+                R2(targets, predictions).mean(),
+                on_step=False,
+                on_epoch=True,
+            )
+            self.log(
+                "test_MSE",
+                ((targets - predictions) ** 2).mean(),
+                on_step=False,
+                on_epoch=True,
+            )
+
+
+        if batch_idx == 0:
+            # hack: need to find a callback way
+            predictions = []
+            coeffs = []
+            targets = []
+            for (
+                past_omni,
+                past_supermag,
+                future_supermag,
+                past_dates,
+                future_dates,
+                (mlt, mcolat),
+            ) in self.wiemer_data:
                 past_omni = past_omni.to(device)
                 past_supermag = past_supermag.to(device)
                 mlt = mlt.to(device)
