@@ -8,7 +8,11 @@ import pandas as pd
 import sklearn.model_selection
 from astropy.time import Time
 import h5py 
-from data_utils import get_iaga_data_as_list, get_omni_data
+
+import sys
+
+sys.path.append('../')
+from utils.data_utils import get_iaga_data_as_list, get_omni_data
 
 BUCKETS = 100
 
@@ -16,8 +20,8 @@ BUCKETS = 100
 def get_sequences(df, length, lag):
     _df = df.copy()
     _df['cluster'] = (_df['seconds'].diff() != 60).cumsum()
-    f = _df.groupby(['cluster']).apply(lambda x: x[:len(x)-length-lag]['index']).reset_index(drop=True).values
-    t = _df.groupby(['cluster']).apply(lambda x: x[length+lag:]['index']).reset_index(drop=True).values
+    f = _df.groupby(['cluster']).apply(lambda x: x[:len(x)-length-lag]['index']).reset_index(drop=True).values.ravel()
+    t = _df.groupby(['cluster']).apply(lambda x: x[length+lag:]['index']).reset_index(drop=True).values.ravel()
     
     assert (t-f).max() == (t-f).min() == (length+lag)
 
@@ -38,7 +42,7 @@ def weimerdatesgetter(base="../data_local/weimer/"):
         storm_inds.append(Time(wtime, format="jd").to_value("unix"))
     return storm_inds
 
-def generate_indices(base,year,LENGTH,LAG):
+def generate_indices(base,year,LENGTH,LAG,omni_path="../data_local/omni/sw_data.h5",weimer_path="../data_local/weimer/"):
     print(f'loading from path {base} /')
 
     dates, data, features = get_iaga_data_as_list(base,year,tiny=False,load_data=False)
@@ -52,7 +56,7 @@ def generate_indices(base,year,LENGTH,LAG):
     df['bucket'] = (((df['index']%bucket_size)==0) & (df['index'] > 0)).cumsum()
 
     #Gets us list of start and end times of storm
-    weimertimes = weimerdatesgetter(base="../data_local/weimer/")
+    weimertimes = weimerdatesgetter(base=weimer_path)
     weimerbuckets = []
     for dateset in weimertimes:
         start,end = dateset[0],dateset[-1]
@@ -85,7 +89,7 @@ def generate_indices(base,year,LENGTH,LAG):
     # test if it maches omni
     for year in pd.unique(df['dates'].dt.year):
         print(f'testing {year}')
-        omni = get_omni_data("../data_local/omni/sw_data.h5", year=f'{year}')
+        omni = get_omni_data(omni_path, year=f'{year}')
         assert len(df.loc[df['dates'].dt.year==year]) == len(omni)
     print('testing done')
 
@@ -95,5 +99,5 @@ def generate_indices(base,year,LENGTH,LAG):
     weimer_idx = get_sequences(weimer_df, LENGTH, LAG)
     return train_idx,test_idx,val_idx,weimer_idx
 
-if __name__ == '__main__':
-    generate_indices(base="../full_data_panos/iaga/",year=list(np.arange(2010,2019).astype(int)),LENGTH=600,LAG=1)
+# if __name__ == '__main__':
+#     generate_indices(base="../full_data_panos/iaga/",year=list(np.arange(2010,2019).astype(int)),LENGTH=600,LAG=1)

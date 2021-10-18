@@ -81,7 +81,7 @@ def get_iaga_data_as_list(base,year,tiny=False,load_data=True):
         dates = np.concatenate(dates,axis=0)  
 
         if load_data:
-            data = np.concatenate(data,axis=0)   
+            data = np.concatenate(data,axis=0)
         return dates,data,feat
     else:
         raise TypeError("year must be either a list of years, or a single year.")
@@ -129,6 +129,7 @@ def get_iaga_data(path, tiny=False, load_data=True,max_stations=None):
                 [d, np.zeros([d.shape[0], max_stations - d.shape[1], d.shape[2]]) * np.nan],
                 axis=1,
             )
+        data = np.concatenate(data,axis=0)
     dates = np.concatenate(dates)
 
     return dates, data, features
