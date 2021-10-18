@@ -278,7 +278,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
 
         self.targets = targets
 
-        self.window_length = max(past_omni_length,past_supermag_length)+lag-1
+        self.window_length = past_omni_length+lag-1
         self.n_buckets = self.dates.shape[0]
         self.n_points_per_bucket = self.dates.shape[1]
         
@@ -294,6 +294,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         self.zero_omni = zero_omni
         self.zero_supermag = zero_supermag
         self.training_batch = training_batch
+        import pdb; pdb.set_trace()
 
         if scaler is not None:
             print("using existing scaler")
@@ -319,7 +320,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         self._nbasis = nmax
 
     def __len__(self):
-        return int(self.n_buckets*self.max_no_indices)
+        return int(self.omni.shape[0])
 
     def __getitem__(self, index):
         """
@@ -333,12 +334,12 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         id_bucket = int(index//self.max_no_indices)
         id_index = int(index%self.max_no_indices)
 
-        past_omni = self.omni[id_bucket,id_index:id_index+self.past_omni_length]
+        past_omni = self.omni[index,:self.past_omni_length,...]
         past_supermag = None
-        past_dates = self.dates[id_bucket,id_index:id_index+self.past_omni_length]
+        past_dates = self.dates[index,:self.past_omni_length]
 
-        future_supermag = np.expand_dims(self.supermag_data[id_bucket,id_index+self.window_length],axis=0)
-        future_dates = self.dates[id_bucket,id_index+self.window_length]
+        future_supermag = np.expand_dims(self.supermag_data[index,self.window_length,...],axis=0)
+        future_dates = self.dates[index,self.window_length]
 
         sm_future = NamedAccess(future_supermag, self.supermag_features)
 
