@@ -41,7 +41,6 @@ loss = config['loss']
 
 yearlist = list(np.arange(2010,2019).astype(int))
 supermag_data = SuperMAGIAGADataset(*get_iaga_data_as_list(base="full_data_panos/iaga/",year=yearlist))
-
 yearlist = list(np.arange(2010,2019).astype(str))
 omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year=yearlist))
 
@@ -51,6 +50,7 @@ train_idx,test_idx,val_idx,weimer_idx = generate_indices(base="full_data_panos/i
                                                             omni_path="data_local/omni/sw_data.h5",
                                                             weimer_path="data_local/weimer/")
 train_idx = np.asarray(train_idx)
+# import pdb; pdb.set_trace()
 train_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,train_idx,
             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
@@ -62,14 +62,14 @@ val_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,val_idx,
             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
             zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
 
-test_idx = np.asarray(test_idx)
-test_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
-            f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
-            past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
-            zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
+# test_idx = np.asarray(test_idx)
+# test_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
+#             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
+#             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
+#             zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
 
-weimer_idx = np.asarray(weimer_idx)
-weimer_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
-            f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
-            past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
-            zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
+# weimer_idx = np.asarray(weimer_idx)
+# weimer_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
+#             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
+#             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
+#             zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
