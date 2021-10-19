@@ -224,7 +224,6 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         training_batch=True,
         nmax=20
     ):
-        import pdb; pdb.set_trace()
         self.supermag_data = supermag_data.data
         #np.zeros([len(idx),idx[0][1]-idx[0][0],supermag_data.data.shape[1],supermag_data.data.shape[2]])
         # for i,index in enumerate(tqdm.tqdm(idx)):
@@ -234,64 +233,46 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
 
         # Generate the slices correspondong to each bucket
         self.sg_indices = idx
-        new_inds = np.linspace(idx[:,0],idx[:,1],(idx[:,1]-idx[:,0])[0]).astype(int).T
+        # new_inds = np.linspace(idx[:,0],idx[:,1],(idx[:,1]-idx[:,0])[0]).astype(int).T
         #Now use new_inds to index the array elements. 
         #Size of data should now be [N_buckets,N_elements_in_bucket,...]
-        
-        idx = new_inds
 
-        self.dates = supermag_data.dates[idx]
+        self.dates = supermag_data.dates
+        # del new_inds
         #shape (n_buckets,n_elements_in_bucket)
 
         self.target_idx = []
         for target in targets:
             self.target_idx.append(np.where(self.supermag_features == target)[0][0])
 
-        self.omni = np.stack([omni_data.data.iloc[i].to_numpy() for i in list(idx)],axis=0)
-        #shape (n_buckets,n_elements_in_bucket,n_features)
+        self.omni = omni_data.data.values
+        #This shape is (n_total,n_omni)
+
         print("extracting f107")
         f107_data = np.load(f107_dataset)
         
         # Vectorized operation: pd datetime needs 1D array, and give unit as 's'
-        tmp_dates = pd.to_datetime(self.dates.reshape(-1),unit='s').to_numpy().reshape(list(self.dates.shape))
-        #Find the best matching f10.7 index along 3rd dimension
-        match = np.argmin(np.abs(np.expand_dims(tmp_dates,axis=-1)-f107_data["dates"].reshape([1,1,-1])),axis=-1)
-        f107 = f107_data["f107"][match]
+        # tmp_dates = pd.to_datetime(self.dates.reshape(-1),unit='s').to_numpy().reshape(list(self.dates.shape))
+        # #Find the best matching f10.7 index along 3rd dimension
+        # match = np.argmin(np.abs(np.expand_dims(tmp_dates,axis=-1)-f107_data["dates"].reshape([1,1,-1])),axis=-1)
+        # del tmp_dates
+        self.f107 = f107_data
         # of shape (n_buckets, n_points_per_buckets)
 
-        # f107 = []
-        # for date in tqdm.tqdm(self.dates):
-        #     match = np.argmin(np.abs(f107_data["dates"]- np.datetime64(
-        #         datetime.utcfromtimestamp(date).replace(hour=0, minute=0)
-        #     )))
-        #     # match = np.where(mask)[0][0]
-        #     val = f107_data["f107"][match]
-        #     f107.append(val)
-        # f107 = np.array(f107)
-
         # add dipole
-        self.omni = np.concatenate(
-            [self.omni, dipole_tilt(self.dates).reshape(list(self.dates.shape)+[1])], -1
-        )
-        self.omni = np.concatenate([self.omni, f107.reshape(list(self.dates.shape)+[1])], -1)
+        # self.omni = np.concatenate(
+        #     [self.omni, dipole_tilt(self.dates).reshape(list(self.dates.shape)+[1])], -1
+        # )
+        # self.omni = np.concatenate([self.omni, f107.reshape(list(self.dates.shape)+[1])], -1)
         omni_columns = np.array(omni_data.data.columns.tolist() + ["dipole", "f107"])
 
         self.omni_features = omni_columns
 
-        assert len(self.dates) == len(self.omni)
+        # assert len(self.dates) == len(self.omni)
         # assert len(self.dates) == len(self.supermag_data)
 
         self.targets = targets
-
         self.window_length = past_omni_length+lag-1
-        self.n_buckets = self.dates.shape[0]
-        self.n_points_per_bucket = self.dates.shape[1]
-        
-        #Window length should be less than or equal to number of points in the bucket. 
-        assert self.window_length <= self.n_points_per_bucket
-
-        self.max_no_indices = self.n_points_per_bucket-self.window_length
-
         self.past_omni_length = past_omni_length
         self.past_supermag_length = past_supermag_length
         self.future_length = future_length
@@ -299,16 +280,15 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         self.zero_omni = zero_omni
         self.zero_supermag = zero_supermag
         self.training_batch = training_batch
-        import pdb; pdb.set_trace()
 
         if scaler is not None:
             print("using existing scaler")
-            omni_mean, omni_std = scaler["omni"]
-            self.omni = (self.omni-omni_mean)/omni_std
+            # omni_mean, omni_std = scaler["omni"]
+            # self.omni = (self.omni-omni_mean[:-2])/omni_std[:-1]
 
-            target_mean, target_std = scaler["supermag"]
-            for i in self.sg_indices:
-                self.supermag_data[i[0]:i[1],:,self.target_idx] = (self.supermag_data[i[0]:i[1],:,self.target_idx]-target_mean)/target_std
+            # target_mean, target_std = scaler["supermag"]
+            # for i in self.sg_indices:
+            #     self.supermag_data[i[0]:i[1],:,self.target_idx] = (self.supermag_data[i[0]:i[1],:,self.target_idx]-target_mean)/target_std
             self.scaler = scaler
         else:
             self.scaler = {}
@@ -319,23 +299,31 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
             si = np.random.choice(len(self.sg_indices),size=int(N_SAMPLES/self.window_length),replace=False)
             sel_ind = self.sg_indices[si]
             new_inds = np.linspace(sel_ind[:,0],sel_ind[:,1],(sel_ind[:,1]-sel_ind[:,0])[0]).astype(int).T
-            target = self.supermag_data[new_inds,:,self.target_idx]
+            target = self.supermag_data[new_inds,...][...,self.target_idx]
 
             target_mean = np.nanmean(target, axis=(0,1,2))
             target_std = np.nanstd(target, axis=(0,1,2))
             self.scaler["supermag"] = [target_mean, target_std]
 
-            omni_mean = np.nanmean(self.omni, axis=(0,1))
-            omni_std = np.nanstd(self.omni, axis=(0,1))
+            dt=self.dates[new_inds]
+            match =  np.argmin(np.abs(pd.to_datetime(dt.reshape(-1),unit='s').to_numpy().reshape(list(dt.shape))[...,None]-self.f107["dates"].reshape([1,1,-1])),axis=-1)
+            f107_tmp = self.f107["f107"][match]
+            new_omni=np.concatenate([self.omni[i,...] for i in new_inds],axis=0)
+            target = np.concatenate([new_omni,dipole_tilt(dt).reshape([-1,1]),f107_tmp.reshape([-1,1])],axis=-1)
+            del new_omni
+            omni_mean = np.nanmean(target, axis=0)
+            omni_std = np.nanstd(target, axis=0)
             self.scaler["omni"] = [omni_mean, omni_std]
-            for i in self.sg_indices:
-                self.supermag_data[i[0]:i[1],:,self.target_idx] = (self.supermag_data[i[0]:i[1],:,self.target_idx]-target_mean)/target_std
-            self.omni = (self.omni-omni_mean)/omni_std
+            # for i in self.sg_indices:
+            self.supermag_data[...,self.target_idx] = (self.supermag_data[...,self.target_idx]-target_mean)/target_std
+            
+            self.omni = (self.omni-omni_mean[:-2])/omni_std[:-2]
+
 
         self._nbasis = nmax
 
     def __len__(self):
-        
+
         return int(self.omni.shape[0])
 
     def __getitem__(self, index):
@@ -347,14 +335,21 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
             Any index k will be addressed as (k/M,k%M,...).
              k/M will give which bucket is taken, while k%M will put index within the bucket. 
         """
-        past_omni = self.omni[index,:self.past_omni_length,...]
-        past_supermag = None
-        past_dates = self.dates[index,:self.past_omni_length]
-
         sg_ind = self.sg_indices[index]
 
+        past_omni = self.omni[sg_ind[0]:sg_ind[0]+self.past_omni_length,...]
+        past_supermag = None
+        past_dates = self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_lengt]
+        dp = (dipole_tilt(self.dates[index,:])-omni_mean[-2])/omni_std[-2]
+
+        tmp_dates = pd.to_datetime(past_dates.reshape(-1),unit='s').to_numpy().reshape([-1,1])
+        #Find the best matching f10.7 index along 2nd dimension
+        match = np.argmin(np.abs(np.expand_dims(tmp_dates,axis=-1)-self.f107["dates"].reshape([1,-1])),axis=-1)
+        f107 = (self.f107["f107"][match]-omni_mean[-1])/omni_std[-1]
+        past_omni = np.concatenate([past_omni,dp.reshape(list(past_omni.shape[0])+[1]),f107.reshape(list(past_omni.shape[0])+[1])],axis=-1)
+
         future_supermag = self.supermag_data[sg_ind[1],...][None,:]
-        future_dates = self.dates[index,self.window_length]
+        future_dates = self.dates[sg_ind[1],self.window_length][None,:]
 
         sm_future = NamedAccess(future_supermag, self.supermag_features)
 
