@@ -335,6 +335,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         self._nbasis = nmax
 
     def __len__(self):
+        
         return int(self.omni.shape[0])
 
     def __getitem__(self, index):
