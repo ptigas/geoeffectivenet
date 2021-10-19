@@ -224,7 +224,16 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         training_batch=True,
         nmax=20
     ):
+        import pdb; pdb.set_trace()
+        self.supermag_data = supermag_data.data
+        #np.zeros([len(idx),idx[0][1]-idx[0][0],supermag_data.data.shape[1],supermag_data.data.shape[2]])
+        # for i,index in enumerate(tqdm.tqdm(idx)):
+        #     self.supermag_data[i] = supermag_data.data[index[0]:index[1],...]
+        #shape (n_buckets,n_elements_in_bucket,n_stations,n_components)
+        self.supermag_features = supermag_data.features
+
         # Generate the slices correspondong to each bucket
+        self.sg_indices = idx
         new_inds = np.linspace(idx[:,0],idx[:,1],(idx[:,1]-idx[:,0])[0]).astype(int).T
         #Now use new_inds to index the array elements. 
         #Size of data should now be [N_buckets,N_elements_in_bucket,...]
@@ -233,10 +242,6 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
 
         self.dates = supermag_data.dates[idx]
         #shape (n_buckets,n_elements_in_bucket)
-
-        self.supermag_data = supermag_data.data[idx]
-        #shape (n_buckets,n_elements_in_bucket,n_stations,n_components)
-        self.supermag_features = supermag_data.features
 
         self.target_idx = []
         for target in targets:
@@ -274,7 +279,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         self.omni_features = omni_columns
 
         assert len(self.dates) == len(self.omni)
-        assert len(self.dates) == len(self.supermag_data)
+        # assert len(self.dates) == len(self.supermag_data)
 
         self.targets = targets
 
@@ -300,21 +305,31 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
             print("using existing scaler")
             omni_mean, omni_std = scaler["omni"]
             self.omni = (self.omni-omni_mean)/omni_std
-            target = self.supermag_data[..., self.target_idx]
+
             target_mean, target_std = scaler["supermag"]
-            self.supermag_data[..., self.target_idx] = (target-target_mean)/target_std
+            for i in self.sg_indices:
+                self.supermag_data[i[0]:i[1],:,self.target_idx] = (self.supermag_data[i[0]:i[1],:,self.target_idx]-target_mean)/target_std
             self.scaler = scaler
         else:
             self.scaler = {}
-            print("learning scaler")
-            target = self.supermag_data[...,self.target_idx]
+            print("learning scaler....")
+            print("NOTE: Since the dataset is large, we take mean across only a limited set of samples due to memory constraint")
+            N_SAMPLES = 10000
+            np.random.seed(0)
+            si = np.random.choice(len(self.sg_indices),size=int(N_SAMPLES/self.window_length),replace=False)
+            sel_ind = self.sg_indices[si]
+            new_inds = np.linspace(sel_ind[:,0],sel_ind[:,1],(sel_ind[:,1]-sel_ind[:,0])[0]).astype(int).T
+            target = self.supermag_data[new_inds,:,self.target_idx]
+
             target_mean = np.nanmean(target, axis=(0,1,2))
             target_std = np.nanstd(target, axis=(0,1,2))
             self.scaler["supermag"] = [target_mean, target_std]
+
             omni_mean = np.nanmean(self.omni, axis=(0,1))
             omni_std = np.nanstd(self.omni, axis=(0,1))
             self.scaler["omni"] = [omni_mean, omni_std]
-            self.supermag_data[...,self.target_idx] = (target-target_mean)/target_std
+            for i in self.sg_indices:
+                self.supermag_data[i[0]:i[1],:,self.target_idx] = (self.supermag_data[i[0]:i[1],:,self.target_idx]-target_mean)/target_std
             self.omni = (self.omni-omni_mean)/omni_std
 
         self._nbasis = nmax
@@ -331,14 +346,13 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
             Any index k will be addressed as (k/M,k%M,...).
              k/M will give which bucket is taken, while k%M will put index within the bucket. 
         """
-        id_bucket = int(index//self.max_no_indices)
-        id_index = int(index%self.max_no_indices)
-
         past_omni = self.omni[index,:self.past_omni_length,...]
         past_supermag = None
         past_dates = self.dates[index,:self.past_omni_length]
 
-        future_supermag = np.expand_dims(self.supermag_data[index,self.window_length,...],axis=0)
+        sg_ind = self.sg_indices[index]
+
+        future_supermag = self.supermag_data[sg_ind[1],...][None,:]
         future_dates = self.dates[index,self.window_length]
 
         sm_future = NamedAccess(future_supermag, self.supermag_features)
