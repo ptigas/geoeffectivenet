@@ -324,7 +324,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
 
     def __len__(self):
 
-        return int(self.omni.shape[0])
+        return int(len(self.sg_indices))
 
     def __getitem__(self, index):
         """
@@ -337,19 +337,19 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         """
         sg_ind = self.sg_indices[index]
 
-        past_omni = self.omni[sg_ind[0]:sg_ind[0]+self.past_omni_length,...]
+        po = self.omni[sg_ind[0]:sg_ind[0]+self.past_omni_length,...]
         past_supermag = None
-        past_dates = self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_lengt]
-        dp = (dipole_tilt(self.dates[index,:])-omni_mean[-2])/omni_std[-2]
+        past_dates = self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_length]
+        dp = (dipole_tilt(self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_length])-self.scaler["omni"][0][-2])/(self.scaler["omni"][0][-2])
 
         tmp_dates = pd.to_datetime(past_dates.reshape(-1),unit='s').to_numpy().reshape([-1,1])
         #Find the best matching f10.7 index along 2nd dimension
-        match = np.argmin(np.abs(np.expand_dims(tmp_dates,axis=-1)-self.f107["dates"].reshape([1,-1])),axis=-1)
-        f107 = (self.f107["f107"][match]-omni_mean[-1])/omni_std[-1]
-        past_omni = np.concatenate([past_omni,dp.reshape(list(past_omni.shape[0])+[1]),f107.reshape(list(past_omni.shape[0])+[1])],axis=-1)
-
+        match = np.argmin(np.abs(tmp_dates-self.f107["dates"].reshape([1,-1])),axis=-1)
+        f107 = (self.f107["f107"][match]-self.scaler["omni"][0][-1])/(self.scaler["omni"][0][-1])
+        past_omni = np.concatenate([po,dp.reshape(po.shape[0],1),f107.reshape(po.shape[0],1)],axis=-1)
+        del po
         future_supermag = self.supermag_data[sg_ind[1],...][None,:]
-        future_dates = self.dates[sg_ind[1],self.window_length][None,:]
+        future_dates = np.array([self.dates[sg_ind[1]]])[None,:]
 
         sm_future = NamedAccess(future_supermag, self.supermag_features)
 
