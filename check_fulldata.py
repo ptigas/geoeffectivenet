@@ -1,6 +1,6 @@
 import os.path
 import pickle
-
+import pandas as pd
 import h5py
 import numpy as np
 import pytorch_lightning as pl
@@ -55,21 +55,36 @@ train_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,train_idx
             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
             zero_supermag=False,scaler=None,training_batch=True,nmax=nmax)
+print("Train done")
+v = train_ds[0]
+import pdb; pdb.set_trace()
+print(f"{v[0].shape,v[1],v[2].shape}")
+print(f"OMNI: {pd.to_datetime(v[3][0].ravel(),unit='s')}-- {pd.to_datetime(v[3][-1].ravel(),unit='s')}, supermag: {pd.to_datetime(v[4].ravel(),unit='s')}")
 
 val_idx = np.asarray(val_idx)
 val_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,val_idx,
             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
             zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
-
-# test_idx = np.asarray(test_idx)
-# test_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
-#             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
-#             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
-#             zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
-
-# weimer_idx = np.asarray(weimer_idx)
-# weimer_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
-#             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
-#             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
-#             zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
+print("Val done")
+v = val_ds[0]
+print(f"{v[0].shape,v[1],v[2].shape}")
+print(f"OMNI: {pd.to_datetime(v[3][0].ravel(),unit='s')}-- {pd.to_datetime(v[3][-1].ravel(),unit='s')}, supermag: {pd.to_datetime(v[4].ravel(),unit='s')}")
+test_idx = np.asarray(test_idx)
+test_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
+            f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
+            past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
+            zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
+print("Test done")
+v = test_ds[0]
+print(f"{v[0].shape,v[1],v[2].shape}")
+print(f"OMNI: {pd.to_datetime(v[3][0].ravel(),unit='s')}-- {pd.to_datetime(v[3][-1].ravel(),unit='s')}, supermag: {pd.to_datetime(v[4].ravel(),unit='s')}")
+weimer_idx = np.asarray(weimer_idx)
+weimer_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,weimer_idx,
+            f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
+            past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
+            zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
+print("Weimer done")
+v = weimer_ds[0]
+print(f"{v[0].shape,v[1],v[2].shape}")
+print(f"OMNI: {pd.to_datetime(v[3][0].ravel(),unit='s')}-- {pd.to_datetime(v[3][-1].ravel(),unit='s')}, supermag: {pd.to_datetime(v[4].ravel(),unit='s')}")
