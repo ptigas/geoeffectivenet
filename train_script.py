@@ -51,7 +51,6 @@ hyperparameter_defaults = hyperparameter_best
 
 wandb.init(config=hyperparameter_defaults)
 config = wandb.config
-wandb.run.name = f"FULL_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
 
 #----- Data loading also depends on the sweep parameters.
 #----- Hence this process will be repeated per training cycle.
@@ -69,6 +68,8 @@ def train(config):
     n_hidden=config.n_hidden
     dropout_prob=config.dropout_prob
     loss = config.loss
+    
+    wandb.run.name = f"FULL_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
 
     yearlist = list(np.arange(2010,2019).astype(int))
     supermag_data = SuperMAGIAGADataset(*get_iaga_data_as_list(base="full_data_panos/iaga/",year=yearlist))
