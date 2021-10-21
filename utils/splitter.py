@@ -23,7 +23,7 @@ def get_sequences(df, length, lag):
     f = _df.groupby(['cluster']).apply(lambda x: x[:len(x)-length-lag]['index']).reset_index(drop=True).values.ravel()
     t = _df.groupby(['cluster']).apply(lambda x: x[length+lag:]['index']).reset_index(drop=True).values.ravel()
     
-    assert (t-f).max() == (t-f).min() == (length+lag)
+    assert np.max((t-f)) == np.min((t-f)) == (length+lag)
 
     return list(zip(f, t))
 
@@ -71,6 +71,7 @@ def generate_indices(base,year,LENGTH,LAG,omni_path="../data_local/omni/sw_data.
     TRAIN_TEST_SPLIT = [a for a in list(np.arange(BUCKETS+1)) if a not in weimerbuckets]
     train_size = 0.8+int(N_WEIMER/BUCKETS)
 
+    np.random.seed(0)
     train, test_val = sklearn.model_selection.train_test_split(TRAIN_TEST_SPLIT, train_size=train_size)
     test, val = sklearn.model_selection.train_test_split(test_val, train_size=0.5)
     weimer = weimerbuckets

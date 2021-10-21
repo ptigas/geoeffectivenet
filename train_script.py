@@ -42,7 +42,7 @@ torch.set_default_dtype(torch.float64)  # this is important else it will overflo
 
 hyperparameter_best = dict(future_length = 1, past_omni_length = 120,
                                 omni_resolution = 1, nmax = 20,lag = 1,
-                                learning_rate = 5e-04,batch_size = 1024*3,
+                                learning_rate = 5e-04,batch_size = 1024*8,
                                 l2reg=1.6e-5,epochs = 1000, dropout_prob=0.1,n_hidden=64,
                                 loss='MAE')
                                 # learning_rate originally 1e-5
@@ -68,7 +68,7 @@ def train(config):
     n_hidden=config.n_hidden
     dropout_prob=config.dropout_prob
     loss = config.loss
-    
+
     wandb.run.name = f"FULL_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
 
     yearlist = list(np.arange(2010,2019).astype(int))
