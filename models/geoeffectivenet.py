@@ -282,7 +282,7 @@ class NeuralRNNWiemer_HidddenSuperMAG(BaseModel):
 
         # zero fill
         features[features.isnan()] = 0.0
-        init_state  = past_supermag[:,0,:,2:4]
+        init_state  = past_supermag[:,:,2:4]
 
         #Leverage nan!=nan
         inds = ~init_state.isnan()

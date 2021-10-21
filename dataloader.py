@@ -249,6 +249,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         #This shape is (n_total,n_omni)
 
         print("extracting f107")
+        self.f107path = f107_dataset
         f107_data = np.load(f107_dataset)
         
         # Vectorized operation: pd datetime needs 1D array, and give unit as 's'
@@ -256,7 +257,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         # #Find the best matching f10.7 index along 3rd dimension
         # match = np.argmin(np.abs(np.expand_dims(tmp_dates,axis=-1)-f107_data["dates"].reshape([1,1,-1])),axis=-1)
         # del tmp_dates
-        self.f107 = f107_data
+        self.f107 = [f107_data["f107"],f107_data["dates"]]
         # of shape (n_buckets, n_points_per_buckets)
 
         # add dipole
@@ -306,8 +307,8 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
             self.scaler["supermag"] = [target_mean, target_std]
 
             dt=self.dates[new_inds]
-            match =  np.argmin(np.abs(pd.to_datetime(dt.reshape(-1),unit='s').to_numpy().reshape(list(dt.shape))[...,None]-self.f107["dates"].reshape([1,1,-1])),axis=-1)
-            f107_tmp = self.f107["f107"][match]
+            match =  np.argmin(np.abs(pd.to_datetime(dt.reshape(-1),unit='s').to_numpy().reshape(list(dt.shape))[...,None]-f107_data["dates"].reshape([1,1,-1])),axis=-1)
+            f107_tmp = f107_data["f107"][match]
             new_omni=np.concatenate([self.omni[i,...] for i in new_inds],axis=0)
             target = np.concatenate([new_omni,dipole_tilt(dt).reshape([-1,1]),f107_tmp.reshape([-1,1])],axis=-1)
             del new_omni
@@ -336,21 +337,18 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
              k/M will give which bucket is taken, while k%M will put index within the bucket. 
         """
         sg_ind = self.sg_indices[index]
-
         po = self.omni[sg_ind[0]:sg_ind[0]+self.past_omni_length,...]
-        past_supermag = None
+        past_supermag = self.supermag_data[sg_ind[0],...][None,:]
         past_dates = self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_length]
         dp = (dipole_tilt(self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_length])-self.scaler["omni"][0][-2])/(self.scaler["omni"][0][-2])
-
         tmp_dates = pd.to_datetime(past_dates.reshape(-1),unit='s').to_numpy().reshape([-1,1])
         #Find the best matching f10.7 index along 2nd dimension
-        match = np.argmin(np.abs(tmp_dates-self.f107["dates"].reshape([1,-1])),axis=-1)
-        f107 = (self.f107["f107"][match]-self.scaler["omni"][0][-1])/(self.scaler["omni"][0][-1])
+        match = np.argmin(np.abs(tmp_dates-self.f107[1].reshape([1,-1])),axis=-1)
+        f107 = (self.f107[0][match]-self.scaler["omni"][0][-1])/(self.scaler["omni"][0][-1])
         past_omni = np.concatenate([po,dp.reshape(po.shape[0],1),f107.reshape(po.shape[0],1)],axis=-1)
         del po
         future_supermag = self.supermag_data[sg_ind[1],...][None,:]
         future_dates = np.array([self.dates[sg_ind[1]]])[None,:]
-
         sm_future = NamedAccess(future_supermag, self.supermag_features)
 
         _mlt = 90.0 - sm_future["MLT"] / 24.0 * 360.0
