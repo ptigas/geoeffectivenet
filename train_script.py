@@ -41,9 +41,9 @@ torch.set_default_dtype(torch.float64)  # this is important else it will overflo
 
 
 hyperparameter_best = dict(future_length = 1, past_omni_length = 120,
-                                omni_resolution = 1, nmax = 20,lag = 1,
-                                learning_rate = 5e-04,batch_size = 1024*8,
-                                l2reg=1.6e-5,epochs = 1000, dropout_prob=0.1,n_hidden=64,
+                                omni_resolution = 1, nmax = 20,lag = 20,
+                                learning_rate = 5e-03,batch_size = 8500,
+                                l2reg=1.6e-3,epochs = 1000, dropout_prob=0.6,n_hidden=16,
                                 loss='MAE')
                                 # learning_rate originally 1e-5
 
@@ -69,14 +69,14 @@ def train(config):
     dropout_prob=config.dropout_prob
     loss = config.loss
 
-    wandb.run.name = f"FULL_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
+    wandb.run.name = f"Reg_Faster_FULL_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
 
-    yearlist = list(np.arange(2010,2019).astype(int))
+    yearlist = list(np.arange(2011,2018).astype(int))
     supermag_data = SuperMAGIAGADataset(*get_iaga_data_as_list(base="full_data_panos/iaga/",year=yearlist))
-    yearlist = list(np.arange(2010,2019).astype(str))
+    yearlist = list(np.arange(2011,2018).astype(str))
     omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year=yearlist))
 
-    yearlist = list(np.arange(2010,2019).astype(int))
+    yearlist = list(np.arange(2011,2018).astype(int))
     train_idx,test_idx,val_idx,wiemer_idx = generate_indices(base="full_data_panos/iaga/",year=yearlist,
                                                         LENGTH=past_omni_length,LAG=lag,
                                                         omni_path="data_local/omni/sw_data.h5",
@@ -96,11 +96,11 @@ def train(config):
             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
             zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
     print("Val dataloader defined....")
-    test_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
-            f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
-            past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
-            zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
-    print("Test dataloader defined....")
+    # test_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,test_idx,
+    #         f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
+    #         past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
+    #         zero_supermag=False,scaler=train_ds.scaler,training_batch=False,nmax=nmax)
+    # print("Test dataloader defined....")
     wiemer_ds = ShpericalHarmonicsDatasetBucketized(supermag_data,omni_data,wiemer_idx,
             f107_dataset="data_local/f107.npz",targets=targets,past_omni_length=past_omni_length,
             past_supermag_length=1,future_length=future_length,lag=lag,zero_omni=False,
@@ -114,14 +114,14 @@ def train(config):
         wiemer_ds, batch_size=batch_size, shuffle=False, num_workers=12
     )
     train_loader = data.DataLoader(
-        train_ds, batch_size=batch_size, shuffle=False, num_workers=12
+        train_ds, batch_size=batch_size, shuffle=True, num_workers=12
     )
     val_loader = data.DataLoader(
         val_ds, batch_size=batch_size, shuffle=False, num_workers=12
     )
-    test_loader = data.DataLoader(
-        test_ds, batch_size=batch_size, shuffle=False, num_workers=12
-    )
+    # test_loader = data.DataLoader(
+    #     test_ds, batch_size=batch_size, shuffle=False, num_workers=12
+    # )
 
     plot_loader = data.DataLoader(val_ds, batch_size=4, shuffle=False)
     
@@ -145,7 +145,7 @@ def train(config):
 
     # add wiemer data to the model to debug
     model.wiemer_data = wiemer_loader
-    model.test_data = test_loader
+    # model.test_data = test_loader
     model.scaler = scaler
 
     # save the scaler to de-standarize prediction
@@ -162,14 +162,14 @@ def train(config):
     if torch.cuda.is_available():
         trainer = pl.Trainer(
         gpus=-1,
-        check_val_every_n_epoch=5,
+        check_val_every_n_epoch=1,
         logger=wandb_logger,
         max_epochs=max_epochs,
         callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 100)]
     )
     else:
         trainer = pl.Trainer(
-        check_val_every_n_epoch=5,
+        check_val_every_n_epoch=1,
         logger=wandb_logger,
         callbacks=[checkpoint_callback, EarlyStopping(monitor='val_MSE',patience = 100)]
     )

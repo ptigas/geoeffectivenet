@@ -278,9 +278,6 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         self.past_supermag_length = past_supermag_length
         self.future_length = future_length
         self.lag = lag
-        self.zero_omni = zero_omni
-        self.zero_supermag = zero_supermag
-        self.training_batch = training_batch
 
         if scaler is not None:
             print("using existing scaler")
@@ -342,6 +339,7 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         past_dates = self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_length]
         dp = (dipole_tilt(self.dates[sg_ind[0]:sg_ind[0]+self.past_omni_length])-self.scaler["omni"][0][-2])/(self.scaler["omni"][0][-2])
         tmp_dates = pd.to_datetime(past_dates.reshape(-1),unit='s').to_numpy().reshape([-1,1])
+        
         #Find the best matching f10.7 index along 2nd dimension
         match = np.argmin(np.abs(tmp_dates-self.f107[1].reshape([1,-1])),axis=-1)
         f107 = (self.f107[0][match]-self.scaler["omni"][0][-1])/(self.scaler["omni"][0][-1])
