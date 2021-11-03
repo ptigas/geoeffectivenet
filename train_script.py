@@ -41,9 +41,9 @@ torch.set_default_dtype(torch.float64)  # this is important else it will overflo
 
 
 hyperparameter_best = dict(future_length = 1, past_omni_length = 120,
-                                omni_resolution = 1, nmax = 20,lag = 20,
+                                omni_resolution = 1, nmax = 20,lag = 30,
                                 learning_rate = 5e-03,batch_size = 8500,
-                                l2reg=1.6e-3,epochs = 1000, dropout_prob=0.6,n_hidden=16,
+                                l2reg=5e-5,epochs = 1000, dropout_prob=0.7,n_hidden=8,
                                 loss='MAE')
                                 # learning_rate originally 1e-5
 
