@@ -43,10 +43,11 @@ torch.set_default_dtype(torch.float64)  # this is important else it will overflo
 hyperparameter_best = dict(future_length = 1, past_omni_length = 120,
                                 omni_resolution = 1, nmax = 20,lag = 30,
                                 learning_rate = 5e-03,batch_size = 8500,
-                                l2reg=5e-5,epochs = 1000, dropout_prob=0.7,n_hidden=8,
-                                loss='MAE')
+                                l2reg=1e-3,epochs = 1000, dropout_prob=0.9,n_hidden=8,
+                                loss='MAE',model='NeuralRNNWiemer_HidddenSuperMAG')
                                 # learning_rate originally 1e-5
-
+md = {'NeuralRNNWiemer_HidddenSuperMAG':NeuralRNNWiemer_HidddenSuperMAG,
+        'NeuralRNNWiemer':NeuralRNNWiemer}
 hyperparameter_defaults = hyperparameter_best
 
 wandb.init(config=hyperparameter_defaults)
@@ -68,8 +69,9 @@ def train(config):
     n_hidden=config.n_hidden
     dropout_prob=config.dropout_prob
     loss = config.loss
+    NN_md = md[config.model]
 
-    wandb.run.name = f"Reg_Faster_FULL_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
+    wandb.run.name = f"Longer_FULL_{config.model}_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
 
     yearlist = list(np.arange(2011,2018).astype(int))
     supermag_data = SuperMAGIAGADataset(*get_iaga_data_as_list(base="full_data_panos/iaga/",year=yearlist))
@@ -128,7 +130,7 @@ def train(config):
     targets_idx = [np.where(train_ds.supermag_features == target)[0][0] for target in targets]
 
     # initialize model
-    model = NeuralRNNWiemer(
+    model = NN_md(
         past_omni_length,
         future_length,
         train_ds.omni_features,

@@ -185,7 +185,7 @@ class NeuralRNNWiemer_HidddenSuperMAG(BaseModel):
 
         self.omni_resolution = omni_resolution
 
-        hidden = 12 #kwargs.pop('n_hidden',16)
+        hidden = 8 #kwargs.pop('n_hidden',16)
         dropout_prob = kwargs.pop('dropout',0.5)
         levels = 2
         kernel_size = 24
@@ -282,7 +282,7 @@ class NeuralRNNWiemer_HidddenSuperMAG(BaseModel):
 
         # zero fill
         features[features.isnan()] = 0.0
-        init_state  = past_supermag[:,:,2:4]
+        init_state  = past_supermag[:,0,:,2:4]
 
         #Leverage nan!=nan
         inds = ~init_state.isnan()
@@ -291,11 +291,11 @@ class NeuralRNNWiemer_HidddenSuperMAG(BaseModel):
 
         init_summary = [mean.reshape(-1,2)]
         init_summary.append(var.reshape(-1,2))
-        init_summary.append(torch.nanquantile(init_state,1.0,dim=-2).reshape(-1,2))
+        # init_summary.append(torch.nanquantile(init_state,1.0,dim=-2).reshape(-1,2))
         init_summary.append(torch.nanquantile(init_state,0.0,dim=-2).reshape(-1,2))
-        init_summary.append(torch.nanquantile(init_state,0.25,dim=-2).reshape(-1,2))
+        # init_summary.append(torch.nanquantile(init_state,0.25,dim=-2).reshape(-1,2))
         init_summary.append(torch.nanquantile(init_state,0.75,dim=-2).reshape(-1,2))
-        init_summary = torch.stack(init_summary, -1).reshape([1,-1,12])
+        init_summary = torch.stack(init_summary, -1).reshape([1,-1,8])
 
         # fix the zero gradients error
         # future_supermag[future_supermag.isnan()] = 0.0
