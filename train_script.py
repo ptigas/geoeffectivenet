@@ -71,7 +71,7 @@ def train(config):
     loss = config.loss
     NN_md = md[config.model]
 
-    wandb.run.name = f"Longer_FULL_{config.model}_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
+    wandb.run.name = f"CorrectTestNorm_FULL_{config.model}_{loss}_{past_omni_length}_{nmax}_{n_hidden}_{learning_rate*1e6}_{l2reg*1e6}"
 
     yearlist = list(np.arange(2011,2018).astype(int))
     supermag_data = SuperMAGIAGADataset(*get_iaga_data_as_list(base="full_data_panos/iaga/",year=yearlist))

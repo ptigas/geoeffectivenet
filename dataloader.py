@@ -222,7 +222,8 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
         zero_supermag=False,
         scaler=None,
         training_batch=True,
-        nmax=20
+        nmax=20,
+        inference=False
     ):
         self.supermag_data = supermag_data.data
         #np.zeros([len(idx),idx[0][1]-idx[0][0],supermag_data.data.shape[1],supermag_data.data.shape[2]])
@@ -281,13 +282,13 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
 
         if scaler is not None:
             print("using existing scaler")
-            # omni_mean, omni_std = scaler["omni"]
-            # self.omni = (self.omni-omni_mean[:-2])/omni_std[:-1]
-
-            # target_mean, target_std = scaler["supermag"]
-            # for i in self.sg_indices:
-            #     self.supermag_data[i[0]:i[1],:,self.target_idx] = (self.supermag_data[i[0]:i[1],:,self.target_idx]-target_mean)/target_std
             self.scaler = scaler
+            if inference:
+                omni_mean, omni_std = scaler["omni"]
+                self.omni = (self.omni-omni_mean[:-2])/omni_std[:-2]
+
+                target_mean, target_std = scaler["supermag"]
+                self.supermag_data[...,self.target_idx] = (self.supermag_data[...,self.target_idx]-target_mean)/target_std
         else:
             self.scaler = {}
             print("learning scaler....")
@@ -313,6 +314,10 @@ class ShpericalHarmonicsDatasetBucketized(data.Dataset):
             omni_std = np.nanstd(target, axis=0)
             self.scaler["omni"] = [omni_mean, omni_std]
             # for i in self.sg_indices:
+            print("During training time, all the supermag and original OMNI variables, including test set are normalized.")
+            print("Hence, we don't need to normalize them again")
+            print("So, during Wandb execution, the valures in val, weimer ds are all normalized. ")
+            print("BUT THIS IS NOT THE CASE DURING STORM EXCECUTION IN SPACEML")
             self.supermag_data[...,self.target_idx] = (self.supermag_data[...,self.target_idx]-target_mean)/target_std
             
             self.omni = (self.omni-omni_mean[:-2])/omni_std[:-2]
