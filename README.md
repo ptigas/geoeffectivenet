@@ -7,3 +7,5 @@
 5. Run the command `wandb agent <sweep_id>`
 
 Reference for the sweeps: https://github.com/borisdayma/lightning-kitti. 
+
+The data and model checkpoints are in "geo2020_supermag/Uniformdata_multiyear/" in the bucket.
