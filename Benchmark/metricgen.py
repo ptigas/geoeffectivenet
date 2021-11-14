@@ -57,9 +57,10 @@ def EventMetrics(targdbe,targdbn,preddbe,preddbn):
     tmpconf = confuse[k]
     pod = tmpconf['hits']/(tmpconf['hits']+tmpconf['misses'])
     pofd = tmpconf['falsealarm']/(tmpconf['falsealarm']+tmpconf['truenegative'])
+    pc =  (tmpconf['hits']+tmpconf['truenegative'])/(tmpconf['hits']+ tmpconf['falsealarm']+tmpconf['misses']+tmpconf['truenegative'])
     hss = 2*(tmpconf['hits']*tmpconf['truenegative']-tmpconf['misses']*tmpconf['falsealarm'])
     hss = hss/((tmpconf['hits']+tmpconf['misses'])*(tmpconf['misses']+tmpconf['truenegative'])+(tmpconf['hits']+tmpconf['falsealarm'])*(tmpconf['falsealarm']+tmpconf['truenegative']))
-    event_metrics[k]= {'pod':pod,'pofd':pofd,'hss':hss}
+    event_metrics[k]= {'pod':pod,'pofd':pofd,'pc':pc,'hss':hss}
   return event_metrics
 
 def Checkdim(val):
