@@ -12,6 +12,13 @@ import pandas as pd
 from utils.data_utils import get_iaga_data, get_omni_data, load_cached_data, get_wiemer_data,get_iaga_data_as_list
 from utils.splitter import generate_indices
 from dataloader import OMNIDataset, ShpericalHarmonicsDatasetBucketized,SuperMAGIAGADataset
+
+def get_stations(dt_array):
+    yr,mth = dt_array[0].year,dt_array[0].month
+    npzfile = np.load(f"full_data_panos/iaga/{yr}/supermag_iaga_{yr}_{mth}.npz")
+    stations = npzfile['stations']
+    return stations
+
 #----------------------------
 
 hyperparameter_best = dict(future_length = 1, past_omni_length = 120,
@@ -28,15 +35,16 @@ nmax = config['nmax']
 targets = ["dbe_nez", "dbn_nez"] #config.targets
 lag = config['lag']
 
-yearlist = list(np.arange(2010,2012).astype(int))
+weimer_year = 2015
+
+yearlist = list(np.arange(weimer_year-1,weimer_year+1).astype(int))
 supermag_data = SuperMAGIAGADataset(*get_iaga_data_as_list(base="full_data_panos/iaga/",year=yearlist))
 
-yearlist = list(np.arange(2010,2012).astype(str))
+yearlist = list(np.arange(weimer_year-1,weimer_year+1).astype(str))
 omni_data = OMNIDataset(get_omni_data("data_local/omni/sw_data.h5", year=yearlist))
 
 f107 = np.load('data_local/f107.npz')
 f107_data,f107_dates = f107["f107"],f107["dates"]
-weimer_year = 2011
 
 subpath = f'Subset/Weimer/{weimer_year}'
 os.makedirs(subpath,exist_ok=True)
@@ -64,8 +72,16 @@ idx = np.concatenate([id_start[:,None],id_end[:,None]],axis=-1)-id_start[0]
 omnivalues = omni_data.data.values[id_start[0]:end,:]
 omnifeatures = omni_data.data.columns.tolist()
 
+txtfile = pd.read_csv(f"full_data_panos/symh/symh_{weimer_year}.lst",delim_whitespace=True,header=None).values
+ymd = pd.to_datetime(txtfile[:,1]-1, unit='D', origin=pd.Timestamp(f'{txtfile[0,0]}-01-01'))
+date_symh = pd.to_datetime({'year':ymd.year,'month':ymd.month,'day':ymd.day,'hour':txtfile[:,2],'minute':txtfile[:,3]})
+symh_inds = np.argmin(np.abs(date_symh.to_numpy().reshape([1,-1])-pd.to_datetime(weimer_times_unix,unit='s').to_numpy().reshape([-1,1])),axis=-1)
+symh_value = txtfile[:,-1][symh_inds]
+
+stations = get_stations(date_symh)
+
 np.savez(f"{subpath}/supermag_omni_data.npz",data=data,dates=dates,features=features,omni=omnivalues,
-omni_features=omnifeatures,idx=idx)
+omni_features=omnifeatures,idx=idx,symh=symh_value,stations=stations)
 
 #Generate the subset of f107 index.
 tmp_dates = pd.to_datetime(np.array([dates[0],dates[-1]]).reshape(-1),unit='s').to_numpy().reshape([-1,1])
