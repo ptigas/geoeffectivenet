@@ -1,0 +1,8 @@
+There could be slight differences in the results depending on the GPU hardware/drivers and CPU being used. This is because there is some measure of error associated with GPU codes.
+Since our workflow is massively complicated, we would expect some minute differences in the results while we re-run the code. This is expected, and a task for the future to be fixed.
+
+References:
+1. https://pytorch.org/docs/stable/notes/randomness.html
+2. https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html#torch.nn.LSTM
+3. https://pytorch.org/docs/stable/notes/randomness.html
+4. https://stackoverflow.com/questions/63939096/non-deterministic-behavior-for-training-a-neural-network-on-gpu-implemented-in-p
